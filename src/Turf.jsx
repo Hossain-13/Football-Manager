@@ -8,6 +8,7 @@
    ===================================================================== */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { DB } from './lib/db.js';
+import { Analytics } from '@vercel/analytics/react';
 import { supabase, USE_SUPABASE } from './lib/supabase.js';
 import {
   createDbView,
@@ -2606,6 +2607,7 @@ function App() {
           </div>
         </div>
       )}
+      <Analytics />
     </div>
   );
 }
