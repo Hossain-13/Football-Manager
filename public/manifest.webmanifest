@@ -1,0 +1,13 @@
+{
+  "name": "TURF — Matchday Manager",
+  "short_name": "TURF",
+  "description": "Pickup football: availability, teams, formations, live scores, standings & the turf bill.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B3D2E",
+  "theme_color": "#0B3D2E",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
