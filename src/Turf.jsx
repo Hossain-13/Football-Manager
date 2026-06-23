@@ -7,6 +7,7 @@
    See BUILD_LOG.md for the porting rationale.
    ===================================================================== */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { DB } from './lib/db.js';
 import { supabase, USE_SUPABASE } from './lib/supabase.js';
 import {
@@ -2549,6 +2550,7 @@ function App() {
 
   return (
     <div className="app pitch-bg">
+      <SpeedInsights />
       <Sidebar screen={screen} go={go} sessions={DATA.sessions} activeId={activeId} openSession={openSession} />
       <div className="app__main">
         <header className="topbar">
