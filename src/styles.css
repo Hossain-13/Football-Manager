@@ -4,52 +4,56 @@
    ===================================================================== */
 
 :root {
-  /* --- Pitch / surfaces --- */
-  --pitch-950: #07271D;
-  --pitch-900: #0B3D2E;
-  --pitch-800: #0F4D38;
-  --pitch-700: #155C44;
-  --panel:     #0E4736;
-  --panel-2:   #103f31;
-  --raise:     #16624a;
+  /* --- Surfaces (neutral charcoal chrome; pitch motif lives only on the field) --- */
+  --pitch-950: #0A0C10;   /* app background (deepest) */
+  --pitch-900: #0D1015;   /* backdrop base */
+  --pitch-800: #14171D;
+  --pitch-700: #1B2029;
+  --panel:     #14171D;    /* card surface */
+  --panel-2:   #161A21;    /* card gradient end (subtle) */
+  --raise:     #232A35;    /* avatars / raised chips */
 
-  /* --- Chalk / ink --- */
-  --chalk:      #F2EFE6;
-  --chalk-dim:  rgba(242,239,230,.62);
-  --chalk-faint:rgba(242,239,230,.40);
-  --line:       rgba(242,239,230,.16);
-  --line-soft:  rgba(242,239,230,.09);
+  /* --- Ink (AA-correct on dark) --- */
+  --chalk:      #F4F7FA;
+  --chalk-dim:  rgba(244,247,250,.76);
+  --chalk-faint:rgba(244,247,250,.56);
+  --line:       rgba(244,247,250,.12);
+  --line-soft:  rgba(244,247,250,.06);
 
-  /* --- Accents --- */
-  --accent:     #00E0A4;   /* live / active */
-  --accent-ink: #04231b;
-  --amber:      #FFD23A;   /* locked */
+  /* --- Accents (color = meaning, never decoration) --- */
+  --accent:     #16E08C;   /* live / brand / primary action */
+  --accent-ink: #042417;
+  --amber:      #FFC53A;   /* locked / due */
   --coral:      #FF5C5C;   /* out / danger */
-  --sky:        #51B4FF;   /* info */
+  --sky:        #4C9DFF;   /* info / organizer */
 
-  /* --- Team jersey colors --- */
-  --t-red:    #E5484D;
-  --t-blue:   #3E7BFA;
+  /* --- Team jersey colors (vivid on dark; always paired with a label) --- */
+  --t-red:    #F0565B;
+  --t-blue:   #4C86FF;
   --t-amber:  #F5A623;
-  --t-violet: #9B6DFF;
-  --t-teal:   #15C2A8;
+  --t-violet: #A982FF;
+  --t-teal:   #21C9AC;
 
-  /* --- Fonts --- */
-  --f-display: 'Oswald', system-ui, sans-serif;
-  --f-body: 'Hanken Grotesk', system-ui, sans-serif;
+  /* --- Fonts: one UI family (Inter) in multiple weights; mono for codes only --- */
+  --f-display: 'Inter', system-ui, sans-serif;
+  --f-body: 'Inter', system-ui, sans-serif;
   --f-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   /* --- Radius --- */
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 22px;
+  --r-sm: 7px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
   --r-pill: 999px;
 
   /* --- Shadow --- */
-  --sh-1: 0 1px 0 rgba(255,255,255,.04) inset, 0 6px 18px rgba(0,0,0,.35);
-  --sh-2: 0 18px 50px rgba(0,0,0,.45);
-  --glow: 0 0 0 1px rgba(0,224,164,.5), 0 0 28px rgba(0,224,164,.28);
+  --sh-1: 0 1px 0 rgba(255,255,255,.03) inset, 0 4px 14px rgba(0,0,0,.38);
+  --sh-2: 0 16px 44px rgba(0,0,0,.5);
+  --glow: 0 0 0 1px rgba(22,224,140,.5), 0 0 26px rgba(8, 24, 17, 0.26);
+
+  /* --- z-index scale (named; no arbitrary 999) --- */
+  --z-dropdown: 100; --z-sticky: 200; --z-backdrop: 300;
+  --z-modal: 400; --z-toast: 500; --z-tooltip: 600;
 
   --maxw: 1320px;
 }
@@ -64,15 +68,16 @@ body {
   text-rendering: optimizeLegibility;
 }
 button { font-family: inherit; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::placeholder { color: var(--chalk-faint); opacity: 1; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 svg.ico { width: 18px; height: 18px; flex: none; }
 
-/* Pitch texture used on app backdrop ---------------------------------- */
+/* Neutral app backdrop (the green pitch is reserved for the field, not the chrome) */
 .pitch-bg {
   background-color: var(--pitch-900);
   background-image:
-    repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 64px, rgba(0,0,0,.05) 64px 128px),
-    radial-gradient(120% 90% at 50% -10%, rgba(0,224,164,.05), transparent 60%);
+    radial-gradient(130% 90% at 50% -8%, rgba(22,224,140,.05), transparent 55%),
+    linear-gradient(180deg, #0D1015, #0A0C10);
 }
 
 /* ======================= APP SHELL ================================== */
@@ -89,7 +94,7 @@ svg.ico { width: 18px; height: 18px; flex: none; }
 
 /* ======================= SIDEBAR (desktop) ========================== */
 .sidebar {
-  background: linear-gradient(180deg, var(--pitch-950), #06231a);
+  background: linear-gradient(180deg, #0D1015, #0A0C10);
   border-right: 1px solid var(--line);
   padding: 20px 14px;
   display: flex; flex-direction: column; gap: 6px;
@@ -135,7 +140,7 @@ svg.ico { width: 18px; height: 18px; flex: none; }
 .topbar {
   display: flex; align-items: center; gap: 14px;
   padding: 14px 32px; border-bottom: 1px solid var(--line);
-  background: rgba(7,39,29,.72); backdrop-filter: blur(10px);
+  background: rgba(13,16,21,.74); backdrop-filter: blur(10px) saturate(120%);
   position: sticky; top: 0; z-index: 30;
 }
 .topbar__title { font-family: var(--f-display); font-weight: 600; font-size: 22px; letter-spacing: .02em; white-space: nowrap; }
@@ -220,7 +225,7 @@ svg.ico { width: 18px; height: 18px; flex: none; }
   background: rgba(0,0,0,.28); border: 1px solid var(--line); border-radius: var(--r-md);
   padding: 11px 13px; color: var(--chalk); font-family: var(--f-body); font-size: 14.5px;
 }
-.input:focus { border-color: var(--accent); outline: none; }
+.input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(22,224,140,.18); }
 /* nicer position/select dropdowns (was blunt): custom chevron + room on the right */
 select.input {
   appearance: none; -webkit-appearance: none; cursor: pointer;
@@ -234,7 +239,7 @@ select.input option { background: var(--panel-2); color: var(--chalk); }
 /* Get started / Welcome back modal */
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center;
-  padding: 20px; background: rgba(4,16,12,.55);
+  padding: 20px; background: rgba(5,7,10,.62);
   backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
 }
 .modal-card {
@@ -300,8 +305,8 @@ select.input option { background: var(--panel-2); color: var(--chalk); }
 }
 .timer.is-live { box-shadow: var(--glow); border-color: rgba(0,224,164,.5); }
 .timer__digits {
-  font-family: var(--f-display); font-weight: 700; font-variant-numeric: tabular-nums;
-  font-size: clamp(72px, 16vw, 132px); line-height: .86; letter-spacing: .01em;
+  font-family: var(--f-display); font-weight: 800; font-variant-numeric: tabular-nums;
+  font-size: clamp(72px, 16vw, 132px); line-height: .86; letter-spacing: -.02em;
   color: var(--chalk); text-shadow: 0 4px 24px rgba(0,0,0,.4);
 }
 .timer.is-live .timer__digits { color: var(--accent); }
@@ -312,8 +317,8 @@ select.input option { background: var(--panel-2); color: var(--chalk); }
 /* ======================= SCORE STEPPER ============================= */
 .scoreboard { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; }
 .scorebox { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.scorebox__num { font-family: var(--f-display); font-weight: 700; font-variant-numeric: tabular-nums;
-  font-size: clamp(56px, 13vw, 104px); line-height: .85; }
+.scorebox__num { font-family: var(--f-display); font-weight: 800; font-variant-numeric: tabular-nums;
+  font-size: clamp(56px, 13vw, 104px); line-height: .85; letter-spacing: -.02em; }
 .scorebox__team { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-display);
   font-weight: 600; font-size: 16px; letter-spacing: .04em; white-space: nowrap; }
 .stepper { display: inline-flex; gap: 10px; margin-top: 10px; }
@@ -404,7 +409,7 @@ select.input option { background: var(--panel-2); color: var(--chalk); }
 /* ======================= MOBILE BOTTOM BAR ========================= */
 .tabbar {
   display: none; grid-template-columns: repeat(5,1fr); position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
-  background: rgba(6,30,22,.94); backdrop-filter: blur(14px); border-top: 1px solid var(--line);
+  background: rgba(13,16,21,.94); backdrop-filter: blur(14px); border-top: 1px solid var(--line);
   padding: 7px 6px calc(7px + env(safe-area-inset-bottom));
 }
 .tab {
@@ -498,3 +503,24 @@ select.input option { background: var(--panel-2); color: var(--chalk); }
 
 /* Layout is fully responsive via the media queries above — phone vs PC is
    driven by the real viewport, not a manual toggle. */
+
+/* ======================= INTERACTIVE STATES ======================== */
+.btn--ghost:hover { background: rgba(255,255,255,.06); }
+.btn:focus-visible, .icobtn:focus-visible, .nav-item:focus-visible,
+.seg button:focus-visible, .av-toggle button:focus-visible, .preset:focus-visible,
+.tab:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+/* ======================= MOTION SAFETY ============================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pill--live .dot { animation: none; opacity: 1; }
+  .spin { animation: none; }
+  .session-card:hover { transform: none; }
+}
