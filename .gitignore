@@ -20,3 +20,7 @@ dist/
 
 # vercel
 .vercel/
+
+.claude/
+.impeccable/
+design-export/
