@@ -38,12 +38,16 @@ than the client.
 
 ```
 src/
-  Turf.jsx          UI — screens, components, app shell
+  App.jsx           UI orchestrator — state, routing, app shell
+  components/       Icon, core primitives, nav, signature pieces
+  screens/          screens1/2/3 (the 13 screens)
   styles.css        design system
   main.jsx          entry point
   lib/
     supabase.js     Supabase client + feature flag
     liveDb.js       data-access layer (queries, RPCs, mappers)
+    dataView.js     DATA proxy + ACTIVE_DB + key helpers
+    format.js       pure formatting/id helpers
     db.js           base/reference data
   types.ts          data-model reference
 supabase/
