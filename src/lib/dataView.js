@@ -27,3 +27,6 @@ export const DATA = new Proxy({}, {
 export const isGuestKey = (k) => typeof k === 'string' && k.startsWith('g:');
 export const keyFirst = (k) => (isGuestKey(k) ? k.slice(2) : DATA.first(k));
 export const keyName = (k) => (isGuestKey(k) ? k.slice(2) : DATA.name(k));
+
+/* member count for a session - shared by Dashboard + Sessions screens. */
+export const memberCount = (sid) => DATA.members.filter((m) => m.sessionId === sid).length;

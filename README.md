@@ -40,7 +40,7 @@ than the client.
 src/
   App.jsx           UI orchestrator — state, routing, app shell
   components/       Icon, core primitives, nav, signature pieces
-  screens/          screens1/2/3 (the 13 screens)
+  screens/          one file per screen (AuthScreen.jsx, LiveScreen.jsx, ... 13 total)
   styles.css        design system
   main.jsx          entry point
   lib/

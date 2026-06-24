@@ -25,9 +25,19 @@ import { DATA, setActiveDb } from './lib/dataView.js';
 import { Icon } from './components/Icon.jsx';
 import { StatusPill } from './components/core.jsx';
 import { Sidebar, BottomTabBar, MoreScreen, NAV_SESSION } from './components/nav.jsx';
-import { AuthScreen, DashboardScreen, SessionsScreen, DetailScreen, AvailabilityScreen } from './screens/screens1.jsx';
-import { TeamsScreen, FormationScreen, ScheduleScreen } from './screens/screens2.jsx';
-import { LiveScreen, StandingsScreen, HistoryScreen, ExpensesScreen, ProfileScreen } from './screens/screens3.jsx';
+import { AuthScreen } from './screens/AuthScreen.jsx';
+import { DashboardScreen } from './screens/DashboardScreen.jsx';
+import { SessionsScreen } from './screens/SessionsScreen.jsx';
+import { DetailScreen } from './screens/DetailScreen.jsx';
+import { AvailabilityScreen } from './screens/AvailabilityScreen.jsx';
+import { TeamsScreen } from './screens/TeamsScreen.jsx';
+import { FormationScreen } from './screens/FormationScreen.jsx';
+import { ScheduleScreen } from './screens/ScheduleScreen.jsx';
+import { LiveScreen } from './screens/LiveScreen.jsx';
+import { StandingsScreen } from './screens/StandingsScreen.jsx';
+import { HistoryScreen } from './screens/HistoryScreen.jsx';
+import { ExpensesScreen } from './screens/ExpensesScreen.jsx';
+import { ProfileScreen } from './screens/ProfileScreen.jsx';
 
 function buildAssign(db, keepMockPool = false) {
   const a = { pool: [] };

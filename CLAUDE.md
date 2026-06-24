@@ -42,8 +42,14 @@ build` output is byte-identical CSS and same-size JS. Map:
 - `src/components/` - `Icon.jsx`, `core.jsx` (Avatar/PlayerChip/StatusPill/RoleGate/Field/...),
   `nav.jsx` (Sidebar/BottomTabBar/MoreScreen), `signature.jsx` (StandingsTable/TimerDisplay/
   ScoreStepper/FormationPitch + `computeStandings`).
-- `src/screens/` - `screens1.jsx` (Auth/Dashboard/Sessions/Detail/Availability), `screens2.jsx`
-  (Teams/Formation/Schedule), `screens3.jsx` (Live/Standings/History/Expenses/Profile).
+- `src/screens/` - one file per screen, named for its page: `AuthScreen.jsx`,
+  `DashboardScreen.jsx`, `SessionsScreen.jsx`, `DetailScreen.jsx`, `AvailabilityScreen.jsx`,
+  `TeamsScreen.jsx`, `FormationScreen.jsx`, `ScheduleScreen.jsx`, `LiveScreen.jsx`,
+  `StandingsScreen.jsx`, `HistoryScreen.jsx`, `ExpensesScreen.jsx`, `ProfileScreen.jsx`. Each
+  screen takes a single `ctx` prop; single-use sub-components/modals are co-located in their
+  screen file. `memberCount` (shared by Dashboard + Sessions) lives in `lib/dataView.js`.
+  Mobile vs desktop is NOT split per screen - it lives in `components/nav.jsx` (Sidebar vs
+  BottomTabBar) and the `@media` blocks in `styles.css`.
 
 ### State, the DATA proxy, and ACTIVE_DB
 - `DATA` is a `Proxy` over a mutable module-level `ACTIVE_DB` (in `src/lib/dataView.js`).
