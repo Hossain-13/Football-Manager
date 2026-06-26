@@ -2,7 +2,17 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Icon } from './Icon.jsx';
 import { TeamDot, Avatar, StatusPill, useNow } from './core.jsx';
 import { DATA, isGuestKey, keyFirst, keyName } from '../lib/dataView.js';
-import { mmss } from '../lib/format.js';
+import { mmss, pad } from '../lib/format.js';
+
+// Initials for the formation token bead — identical to the Profile/Avatar abbreviation: members
+// use DATA.initials(id); guests fall back to first letters of their name (same as <Avatar/>).
+const initialsOf = (k) => {
+  if (isGuestKey(k)) {
+    const n = k.slice(2);
+    return (n.split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('') || '?').toUpperCase();
+  }
+  return DATA.initials(k);
+};
 
 export function computeStandings(matches, teams, scoring) {
   const rows = {};
@@ -89,13 +99,42 @@ export function TimerDisplay({ match, can, reason, onTimerChange }) {
   const pause = () => { if (can) onTimerChange?.({ startedAt: null, pausedAccumSeconds: Math.floor(elapsed), status: 'live' }); };
   const reset = () => { if (can) onTimerChange?.({ startedAt: null, pausedAccumSeconds: 0, status: 'live' }); };
 
+  // Manual match length: tap the minutes or seconds (only before the clock has started) and type
+  // the value you want. Sets durationSeconds + resets the clock to that length. No magic, just input.
+  const [edit, setEdit] = useState(null); // 'min' | 'sec' | null
+  const [draft, setDraft] = useState('');
+  const editable = can && elapsed < 1 && !running && !done;
+  const beginEdit = (which) => { if (!editable) return; setDraft(String(which === 'min' ? Math.floor(dur / 60) : dur % 60)); setEdit(which); };
+  const commitEdit = () => {
+    if (edit) {
+      let mins = Math.floor(dur / 60), secs = dur % 60;
+      const v = Math.max(0, parseInt(draft, 10) || 0);
+      if (edit === 'min') mins = Math.min(180, v); else secs = Math.min(59, v);
+      const newDur = Math.max(10, mins * 60 + secs);
+      onTimerChange?.({ durationSeconds: newDur, startedAt: null, pausedAccumSeconds: 0, status: 'live' });
+    }
+    setEdit(null);
+  };
+  const editInput = (which) => (
+    <input className="timer-lin__edit" type="number" inputMode="numeric" autoFocus value={draft}
+      onChange={(e) => setDraft(e.target.value)} onBlur={commitEdit}
+      onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEdit(null); }} />
+  );
+
   return (
     <div className="timer-lin">
       <div className="timer-lin__meta">
         {running ? <StatusPill status="live" /> : done ? <StatusPill status="done" /> : <span className="pill">Paused</span>}
         <span className="mono muted" style={{ fontSize: 11 }}>MATCH {match.matchNo} · {Math.round(dur / 60)} MIN</span>
       </div>
-      <div className="timer-lin__digits">{mmss(remaining)}</div>
+      <div className="timer-lin__digits">
+        {edit === 'min' ? editInput('min')
+          : <span className={editable ? 'timer-lin__part' : ''} onClick={() => beginEdit('min')}>{pad(Math.floor(remaining / 60))}</span>}
+        <span className="timer-lin__colon">:</span>
+        {edit === 'sec' ? editInput('sec')
+          : <span className={editable ? 'timer-lin__part' : ''} onClick={() => beginEdit('sec')}>{pad(Math.floor(remaining % 60))}</span>}
+      </div>
+      {editable && edit === null && <div className="muted" style={{ fontSize: 11, marginTop: -4 }}>Tap the time to set the match length.</div>}
       <div className="timer-lin__bar"><span style={{ width: pct + '%', background: fillColor }} /></div>
       <div className="timer-lin__ctl">
         <button className="btn btn--accent" disabled={!can || done} onClick={running ? pause : start}>
@@ -275,7 +314,7 @@ export function FormationPitch({ team, playerIds, captainId, side = 5, saved, on
             <div key={pid} className={'token' + (p.drag ? ' dragging' : '')} style={{ left: p.x + '%', top: p.y + '%' }}
               onPointerDown={(e) => onDown(pid, e)}>
               <div className="token__bead" style={{ background: team.color }}>
-                {p.label}
+                {initialsOf(pid)}
                 {cap && <span className="token__cap">C</span>}
               </div>
               <div className="token__name">{keyFirst(pid)}</div>

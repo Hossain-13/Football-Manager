@@ -5,6 +5,7 @@ import {
   createDbView,
   getSession,
   loadAppData,
+  deleteGoals,
   loadCareerStats,
   loadDashboardStats,
   onAuthChange,
@@ -367,7 +368,12 @@ function AppShell() {
     writeNavState(s, activeIdRef.current);
     const sc = document.querySelector('.app__scroll'); if (sc) sc.scrollTop = 0;
   };
-  const sessionMatches = session ? matches.filter((m) => m.sessionId === session.id) : [];
+  // Sorted by matchNo so EVERY surface (Schedule list, Live "up next", finish→next) reads the
+  // fixtures in the same persisted order; the final's sentinel number keeps it last. This is what
+  // makes a reshuffled order consistent and live-synced across the app.
+  const sessionMatches = session
+    ? matches.filter((m) => m.sessionId === session.id).sort((a, b) => (a.matchNo || 0) - (b.matchNo || 0))
+    : [];
   const setSessionMatches = (next) => {
     const value = typeof next === 'function' ? next(sessionMatches) : next;
     setMatches([...matches.filter((m) => m.sessionId !== session.id), ...value]);
@@ -389,6 +395,7 @@ function AppShell() {
     savePaymentRow: savePaymentRowCtx,
     saveExpenseRow: saveExpenseRowCtx,
     saveGoals: (goals) => persist && saveGoals(goals).catch(persistError),
+    deleteGoals: (ids) => persist && deleteGoals(ids).catch(persistError),
     saveFormation: (teamId, formation) => persist && saveFormation(teamId, formation).catch(persistError),
     logout, reload, dashStats, careerStats, me,
     confirm, alert,

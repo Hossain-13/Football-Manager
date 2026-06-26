@@ -464,6 +464,24 @@ export async function saveMatches(matches) {
   }));
   const { error } = await supabase.from('matches').upsert(payload);
   if (error) throw error;
+  // Remove rows for the written session(s) that are no longer in the set. Without this, a
+  // rebuild/regenerate that produced new row ids left the OLD rows behind in the DB, so the
+  // schedule accumulated duplicate fixtures on every rebuild. The payload always holds the
+  // complete set for the sessions it touches, so anything not listed is genuinely stale.
+  const bySession = {};
+  matches.forEach((m) => { (bySession[m.sessionId] = bySession[m.sessionId] || []).push(m.id); });
+  for (const [sid, ids] of Object.entries(bySession)) {
+    let q = supabase.from('matches').delete().eq('session_id', sid);
+    if (ids.length) q = q.not('id', 'in', `(${ids.join(',')})`);
+    const { error: delError } = await q;
+    if (delError) throw delError;
+  }
+}
+
+export async function deleteGoals(ids) {
+  if (!ids || !ids.length) return;
+  const { error } = await supabase.from('goals').delete().in('id', ids);
+  if (error) throw error;
 }
 
 export async function saveGoals(goals) {

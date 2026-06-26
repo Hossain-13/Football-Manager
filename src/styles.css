@@ -491,10 +491,32 @@ select.input option { background: var(--panel-2); color: var(--chalk); }
 .timer-lin__digits {
   font-family: var(--f-display); font-weight: 800; font-variant-numeric: tabular-nums;
   font-size: clamp(40px, 11vw, 52px); line-height: .9; letter-spacing: -.01em; color: var(--chalk);
+  display: inline-flex; align-items: baseline; gap: 2px;
 }
+.timer-lin__colon { opacity: .7; }
+.timer-lin__part { cursor: pointer; border-bottom: 2px dashed rgba(255,255,255,.28); border-radius: 2px; transition: color .15s, border-color .15s; }
+.timer-lin__part:hover { color: var(--accent); border-color: var(--accent); }
+.timer-lin__edit {
+  font: inherit; width: 1.7em; text-align: center; color: var(--accent);
+  background: rgba(0,224,164,.1); border: 1px solid var(--accent); border-radius: 8px; padding: 0 2px;
+  -moz-appearance: textfield; appearance: textfield;
+}
+.timer-lin__edit::-webkit-outer-spin-button, .timer-lin__edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .timer-lin__bar { width: 100%; max-width: 300px; height: 6px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
 .timer-lin__bar > span { display: block; height: 100%; border-radius: 999px; transition: width .9s linear, background .3s ease-out; }
 .timer-lin__ctl { display: flex; gap: 10px; }
+
+/* Knockout final card (Schedule) — distinct from a normal fixture row, amber title accent. */
+.final-card { border-color: rgba(255,210,58,.35); }
+.final-card__badge { font-family: var(--f-display); font-weight: 800; letter-spacing: .1em; font-size: 13px; color: var(--amber); }
+
+/* Live page slot-time bar — booked slot countdown (kickoff → slot length + 30 min grace). */
+.slot-progress { margin-bottom: 16px; }
+.slot-progress__head { display: flex; justify-content: flex-end; margin-bottom: 7px; }
+.slot-progress__time { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 12px; color: var(--chalk-dim); letter-spacing: .02em; }
+.slot-progress__time .ico { color: var(--chalk-faint); }
+.slot-progress__track { height: 8px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+.slot-progress__track > span { display: block; height: 100%; border-radius: 999px; transition: width 1s linear, background .4s ease-out; }
 
 /* Live hero: team A score row, timer, team B score row, stacked top-to-bottom as one composed
    card with subtle dividers between sections (matches the provided layout exactly). */
@@ -788,6 +810,15 @@ select.input option { background: var(--panel-2); color: var(--chalk); }
      columns onto one row at phone width - not enough room for dot + name + player-count tag +
      remove button, so the X visually crowds/overlaps the count tag. Force one column per row. */
   .builder .grid-auto { grid-template-columns: 1fr !important; }
+  /* Real team names ("Bhumikompo Boys", "Noakhali Superteam") are far longer than the old mock
+     "Team A" — at 16px nowrap they overflowed the fixture card off the screen edge on phones.
+     Let the matchup wrap onto two lines and shrink the type so every row fits the viewport. */
+  .fixture { gap: 8px; padding: 11px 12px; }
+  .fixture > div { min-width: 0; }
+  .fixture__teams { flex-wrap: wrap; font-size: 13.5px; row-gap: 2px; }
+  .fixture__teams .row { white-space: normal; }
+  .fixture__no { font-size: 15px; }
+  .fixture__time { font-size: 11px; }
   .scorebox__num { font-size: 64px; }
   .entry-grid { gap: 10px; }
   .entry-card { padding: 14px; gap: 10px; }

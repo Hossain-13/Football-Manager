@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '../components/Icon.jsx';
 import { TeamDot } from '../components/core.jsx';
-import { FormationPitch } from '../components/signature.jsx';
+import { FormationPitch, PRESETS } from '../components/signature.jsx';
 import { DATA } from '../lib/dataView.js';
+
+// The a-side count is DERIVED from the team's saved formation preset (every preset belongs to one
+// of the 5/6/7 groups) — so a chosen side persists across refreshes and roster edits instead of
+// snapping back to 5 from transient global state. Falls back to the session's players-per-side.
+const inferSide = (team, fallback) => {
+  const preset = team?.formation?.preset;
+  if (preset) { const n = [5, 6, 7].find((k) => PRESETS[k] && PRESETS[k][preset]); if (n) return n; }
+  return (fallback && PRESETS[fallback]) ? fallback : 5;
+};
 
 export function FormationScreen({ ctx }) {
   const teams = ctx.teams;
@@ -38,7 +47,10 @@ export function FormationScreen({ ctx }) {
   const activeTid = visibleTeams.some((t) => t.id === tid) ? tid : visibleTeams[0].id;
   const team = visibleTeams.find((t) => t.id === activeTid);
   const players = teamRoster(team);
-  const side = ctx.side;
+  // Local side, seeded from the team's saved formation (persists across refresh). Re-syncs when you
+  // switch teams or the saved preset changes; the toggle still lets you change it freely.
+  const [side, setSide] = useState(() => inferSide(team, ctx.session?.playersPerSide));
+  useEffect(() => { setSide(inferSide(team, ctx.session?.playersPerSide)); }, [activeTid, team?.formation?.preset]);
   // EDIT = CAPTAIN of THIS team only (creator/organizer/general user can all be a captain, never a
   // guest). Captains have full edit rights always — formation never locks, even on game day.
   const canEdit = isCapOf(team);
@@ -50,7 +62,7 @@ export function FormationScreen({ ctx }) {
         <div className="row" style={{ gap: 10 }}>
           <div className="seg" title="Players per side">
             {[5, 6, 7].map((n) => (
-              <button key={n} className={side === n ? 'on' : ''} onClick={() => ctx.setSide(n)}>{n}-a-side</button>
+              <button key={n} className={side === n ? 'on' : ''} onClick={() => setSide(n)}>{n}-a-side</button>
             ))}
           </div>
           {!canEdit && <span className="pill"><Icon name="lock" className="ico" style={{ width: 13, height: 13 }} /> VIEW ONLY</span>}

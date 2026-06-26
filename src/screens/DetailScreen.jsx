@@ -59,7 +59,9 @@ export function DetailScreen({ ctx }) {
   };
   const liveCount = ctx.matches.filter((m) => m.status === 'live').length;
   const doneCount = ctx.matches.filter((m) => m.status === 'done').length;
-  const perMatch = ctx.matches.length ? Math.round(s.slotMinutes / ctx.matches.length) : 0;
+  // Per-match length comes from the schedule's OWN stored duration (capped at 20 min at build
+  // time), not a re-divide of the slot — so this stat matches what the Schedule page shows.
+  const perMatch = ctx.matches.length ? Math.round(((ctx.matches[0]?.durationSeconds) || 900) / 60) : 0;
 
   const Stat = ({ k, v, sub }) => (
     <div className="surface" style={{ padding: '14px 16px' }}>
