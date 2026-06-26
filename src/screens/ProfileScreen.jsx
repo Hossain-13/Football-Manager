@@ -13,7 +13,10 @@ export function ProfileScreen({ ctx }) {
   if (ctx.isCaptain) badges.push(['Captain', 'var(--amber)']);
   badges.push(['Player', 'var(--accent)']);
   const prefs = [me?.prefPos1, me?.prefPos2].filter(Boolean);
-  const mySessions = DATA.sessions;
+  // Was every session in the app, not just this player's own - DATA.sessions is global.
+  const myMemberships = new Set((DATA.members || []).filter((m) => m.profileId === id).map((m) => m.sessionId));
+  const mySessions = DATA.sessions.filter((s) => myMemberships.has(s.id));
+  const stats = ctx.careerStats;
 
   return (
     <div className="page page--narrow">
@@ -43,7 +46,7 @@ export function ProfileScreen({ ctx }) {
 
       <div className="section-title">Career stats</div>
       <div className="grid-3" style={{ marginBottom: 22 }}>
-        {[['schedule', 'MATCHES', 41], ['trophy', 'GOALS', 17], ['sessions', 'SESSIONS', 12]].map(([icon, k, v]) => (
+        {[['schedule', 'MATCHES', stats ? stats.matches : '—'], ['trophy', 'GOALS', stats ? stats.goals : '—'], ['sessions', 'SESSIONS', mySessions.length]].map(([icon, k, v]) => (
           <div key={k} className="surface dash-stat dash-stat--tile">
             <div className="icon-badge"><Icon name={icon} className="ico" /></div>
             <div>

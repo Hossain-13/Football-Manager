@@ -5,6 +5,7 @@ import {
   createDbView,
   getSession,
   loadAppData,
+  loadCareerStats,
   loadDashboardStats,
   onAuthChange,
   saveAvailabilityRow,
@@ -150,6 +151,13 @@ function AppShell() {
   useEffect(() => {
     if (!USE_SUPABASE || !authSession || screen !== 'dashboard') return;
     loadDashboardStats(authSession.user.id).then(setDashStats).catch(() => {});
+  }, [screen, authSession, liveData]);
+
+  // Same idea for the Profile page's "Career stats" - was hardcoded placeholder numbers before.
+  const [careerStats, setCareerStats] = useState(null);
+  useEffect(() => {
+    if (!USE_SUPABASE || !authSession || screen !== 'profile') return;
+    loadCareerStats(authSession.user.id).then(setCareerStats).catch(() => {});
   }, [screen, authSession, liveData]);
 
   // Get started (first time) / Welcome back (returning) modal over a blurred dashboard.
@@ -369,7 +377,7 @@ function AppShell() {
     saveExpenseRow: saveExpenseRowCtx,
     saveGoals: (goals) => persist && saveGoals(goals).catch(persistError),
     saveFormation: (teamId, formation) => persist && saveFormation(teamId, formation).catch(persistError),
-    logout, reload, dashStats, me,
+    logout, reload, dashStats, careerStats, me,
     confirm, alert,
   };
 

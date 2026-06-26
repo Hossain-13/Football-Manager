@@ -170,6 +170,33 @@ export async function loadSummary(userId) {
   };
 }
 
+// Real Profile-page "Career stats" — sessions count comes from session_members (already loaded
+// in loadSummary), but matches/goals span every session the player has ever been part of, which
+// loadSessionDetail intentionally never fetches (it's scoped to one active session for cost
+// reasons). These two small targeted queries are the only way to get an honest cross-session
+// total instead of the page showing made-up numbers.
+export async function loadCareerStats(profileId) {
+  if (!profileId) return { matches: 0, goals: 0 };
+  const { count: goals, error: goalsErr } = await supabase
+    .from('goals').select('id', { count: 'exact', head: true }).eq('scorer_id', profileId);
+  if (goalsErr) throw goalsErr;
+
+  const { data: tpRows, error: tpErr } = await supabase
+    .from('team_players').select('team_id').eq('profile_id', profileId);
+  if (tpErr) throw tpErr;
+  const teamIds = [...new Set((tpRows || []).map((r) => r.team_id))];
+
+  let matches = 0;
+  if (teamIds.length) {
+    const orFilter = teamIds.map((id) => `team_a.eq.${id},team_b.eq.${id}`).join(',');
+    const { count, error: mErr } = await supabase
+      .from('matches').select('id', { count: 'exact', head: true }).eq('status', 'done').or(orFilter);
+    if (mErr) throw mErr;
+    matches = count || 0;
+  }
+  return { matches, goals: goals || 0 };
+}
+
 function emptyDetail() {
   return {
     detailFor: null,
