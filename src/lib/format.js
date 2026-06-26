@@ -9,6 +9,19 @@ export const taka = (n) => '\u09F3' + n.toLocaleString('en-IN');
 export const firstLetter = (s) => (s && s.match(/[A-Za-z]/)?.[0]) || '?';
 export const newId = (prefix = 'id') => (globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : prefix + Date.now());
 
+// A session's place name and its optional Google Maps URL live together in the one `location`
+// text (no schema change). parseLocation splits them back out; joinLocation stores them as
+// "name url". The URL is detected by pattern, so old rows that already have a link pasted in
+// ("Mohammadpur - https://maps.app.goo.gl/…") are understood automatically.
+export const parseLocation = (loc) => {
+  const str = String(loc || '');
+  const match = str.match(/https?:\/\/\S+/i);
+  const mapUrl = match ? match[0] : '';
+  const name = (mapUrl ? str.replace(mapUrl, '') : str).replace(/^[\s\-–—|·,]+|[\s\-–—|·,]+$/g, '').trim();
+  return { name, mapUrl };
+};
+export const joinLocation = (name, mapUrl) => [String(name || '').trim(), String(mapUrl || '').trim()].filter(Boolean).join(' ');
+
 // The knockout final is a real match row, identified by a sentinel match number so it always
 // sorts last and is never confused with a round-robin fixture (no schema change needed).
 export const FINAL_MATCH_NO = 9000;

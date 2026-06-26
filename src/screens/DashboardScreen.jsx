@@ -2,7 +2,7 @@ import React from 'react';
 import { Icon } from '../components/Icon.jsx';
 import { StatusPill } from '../components/core.jsx';
 import { DATA, memberCount } from '../lib/dataView.js';
-import { dateLabel, timeOfDay, taka } from '../lib/format.js';
+import { dateLabel, timeOfDay, taka, parseLocation } from '../lib/format.js';
 
 export const DashFlag = ({ label, tone }) => {
   const cls = tone === 'ok' ? 'pill pill--paid' : tone === 'warn' ? 'pill pill--due' : tone === 'out' ? 'pill pill--out' : 'pill';
@@ -50,6 +50,9 @@ export function DashboardScreen({ ctx }) {
       </div>
       <div>
         <div className="dash-tile__title">{s.turfName}</div>
+        {parseLocation(s.location).name && (
+          <div className="dash-tile__meta row" style={{ gap: 4 }}><Icon name="location" className="ico" style={{ width: 12, height: 12 }} /> {parseLocation(s.location).name}</div>
+        )}
         <div className="dash-tile__meta">{dateLabel(s.slotStart)} · {timeOfDay(s.slotStart)} · {memberCount(s.id)} in</div>
       </div>
       <div className="dash-tile__flags">
@@ -90,7 +93,7 @@ export function DashboardScreen({ ctx }) {
               <span className="pill pill--live"><span className="dot" /> LIVE NOW</span>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 17 }}>{s.turfName}</div>
-                <div className="muted mono" style={{ fontSize: 11 }}>{dateLabel(s.slotStart)} · {timeOfDay(s.slotStart)} · {memberCount(s.id)} in</div>
+                <div className="muted mono" style={{ fontSize: 11 }}>{parseLocation(s.location).name ? `${parseLocation(s.location).name} · ` : ''}{dateLabel(s.slotStart)} · {timeOfDay(s.slotStart)} · {memberCount(s.id)} in</div>
               </div>
             </div>
             <button className="btn btn--accent btn--sm" onClick={(e) => { e.stopPropagation(); ctx.openSession(s.id); ctx.go('live'); }}>

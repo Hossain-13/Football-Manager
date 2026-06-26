@@ -2,20 +2,20 @@ import React, { useState } from 'react';
 import { Icon } from '../components/Icon.jsx';
 import { SessionCard, Field } from '../components/core.jsx';
 import { DATA, memberCount } from '../lib/dataView.js';
-import { dateLabel, timeOfDay, taka } from '../lib/format.js';
+import { dateLabel, timeOfDay, taka, joinLocation, parseLocation } from '../lib/format.js';
 import { USE_SUPABASE } from '../lib/supabase.js';
 import { createSession, peekSession, joinSession } from '../lib/liveDb.js';
 
 export function AddSessionModal({ ctx, onClose }) {
   const localNow = () => { const d = new Date(Date.now() + 24 * 3600 * 1000); d.setMinutes(0); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
-  const [f, setF] = useState({ turfName: '', location: '', slotLocal: localNow(), slotMinutes: 90, playersPerSide: 5, totalFee: 0 });
+  const [f, setF] = useState({ turfName: '', location: '', mapLink: '', slotLocal: localNow(), slotMinutes: 90, playersPerSide: 5, totalFee: 0 });
   const [busy, setBusy] = useState(false); const [err, setErr] = useState('');
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const submit = () => {
     if (!f.turfName.trim()) { setErr('Turf name is required.'); return; }
     setBusy(true); setErr('');
     createSession({
-      turfName: f.turfName.trim(), location: f.location.trim(),
+      turfName: f.turfName.trim(), location: joinLocation(f.location, f.mapLink),
       slotStart: new Date(f.slotLocal).toISOString(),
       slotMinutes: Number(f.slotMinutes) || 90, playersPerSide: Number(f.playersPerSide) || 5,
       totalFee: Number(f.totalFee) || 0,
@@ -31,6 +31,7 @@ export function AddSessionModal({ ctx, onClose }) {
         <div className="stack">
           <Field label="Turf name"><input className="input" placeholder="e.g. Touchline Turf" value={f.turfName} onChange={(e) => set('turfName', e.target.value)} /></Field>
           <Field label="Location"><input className="input" placeholder="Area, city" value={f.location} onChange={(e) => set('location', e.target.value)} /></Field>
+          <Field label="Google Maps link (optional)"><input className="input" placeholder="https://maps.app.goo.gl/…" value={f.mapLink} onChange={(e) => set('mapLink', e.target.value)} /></Field>
           <div className="grid-2">
             <Field label="Kick-off"><input className="input" type="datetime-local" value={f.slotLocal} onChange={(e) => set('slotLocal', e.target.value)} /></Field>
             <Field label="Slot length (min)"><input className="input" type="number" value={f.slotMinutes} onChange={(e) => set('slotMinutes', e.target.value)} /></Field>
@@ -75,7 +76,7 @@ export function JoinConfirmModal({ peek, busy, onCancel, onConfirm }) {
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal-card" style={{ maxWidth: 400, textAlign: 'left' }} onClick={(e) => e.stopPropagation()}>
         <h2 style={{ fontFamily: 'var(--f-display)', fontSize: 22, margin: '0 0 4px' }}>{peek.turfName}</h2>
-        <p className="muted" style={{ fontSize: 13, margin: '0 0 14px' }}>{peek.location || 'Confirm to join this matchday.'}</p>
+        <p className="muted" style={{ fontSize: 13, margin: '0 0 14px' }}>{parseLocation(peek.location).name || 'Confirm to join this matchday.'}</p>
         <div className="stack" style={{ gap: 8 }}>
           <div className="kv"><span className="kv__k">Creator</span><span className="kv__v">{peek.creatorName || '—'}</span></div>
           <div className="kv"><span className="kv__k">Kick-off</span><span className="kv__v">{dateLabel(peek.slotStart)} · {timeOfDay(peek.slotStart)}</span></div>

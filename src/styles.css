@@ -510,6 +510,14 @@ select.input option { background: var(--panel-2); color: var(--chalk); }
 .final-card { border-color: rgba(255,210,58,.35); }
 .final-card__badge { font-family: var(--f-display); font-weight: 800; letter-spacing: .1em; font-size: 13px; color: var(--amber); }
 
+/* Open-in-Google-Maps button + the creator's inline "add location link" input (Overview page).
+   Solid white fill + the Google Maps marker so it reads unmistakably as a tappable CTA, not text. */
+.maps-btn { text-decoration: none; flex: none; background: #fff; color: #202124; border-color: transparent; }
+.maps-btn:hover:not([disabled]) { background: #f1f3f4; box-shadow: var(--sh-1); }
+.maps-btn:active:not([disabled]) { transform: translateY(1px) scale(.99); }
+.maps-btn .ico { width: 15px; height: 15px; }
+.maps-input { height: 36px; font-size: 13px; min-width: 190px; }
+
 /* Live page slot-time bar — booked slot countdown (kickoff → slot length + 30 min grace). */
 .slot-progress { margin-bottom: 16px; }
 .slot-progress__head { display: flex; justify-content: flex-end; margin-bottom: 7px; }

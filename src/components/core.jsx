@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from './Icon.jsx';
 import { DATA } from '../lib/dataView.js';
-import { pad, dateLabel, timeOfDay } from '../lib/format.js';
+import { pad, dateLabel, timeOfDay, parseLocation } from '../lib/format.js';
 
 export function useNow(ms = 1000) {
   const [, set] = useState(0);
@@ -171,7 +171,7 @@ export function SessionCard({ session, onOpen, count }) {
           </div>
           <h3 style={{ fontFamily: 'var(--f-display)', fontSize: 24, margin: '12px 0 2px', letterSpacing: '.01em' }}>{s.turfName}</h3>
           <div className="row muted" style={{ gap: 5, fontSize: 13 }}>
-            <Icon name="location" className="ico" style={{ width: 14, height: 14 }} /> {s.location}
+            <Icon name="location" className="ico" style={{ width: 14, height: 14 }} /> {parseLocation(s.location).name}
           </div>
         </div>
         <Icon name="arrowR" className="ico session-card__chev" style={{ color: 'var(--chalk-faint)' }} />

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '../components/Icon.jsx';
 import { StatusPill, GateBanner, RoleGate, Field } from '../components/core.jsx';
-import { dateLabel, timeOfDay } from '../lib/format.js';
+import { dateLabel, timeOfDay, parseLocation, joinLocation } from '../lib/format.js';
 import { updateSession, deleteSession } from '../lib/liveDb.js';
 
 export function TiebreakChips({ order, setOrder, disabled }) {
@@ -57,6 +57,22 @@ export function DetailScreen({ ctx }) {
     }).then(() => { ctx.reload(); setSavingSettings(false); setSettingsMsg('Saved'); setTimeout(() => setSettingsMsg(''), 1800); })
       .catch((e) => { setSavingSettings(false); setSettingsMsg(e.message || 'Save failed'); });
   };
+  // Place name + optional Google Maps link share the one location field (parsed back out here).
+  const loc = parseLocation(s.location);
+  const [linkInput, setLinkInput] = useState('');
+  const [savingLink, setSavingLink] = useState(false);
+  const saveLink = () => {
+    const url = linkInput.trim();
+    if (!url) return;
+    setSavingLink(true);
+    updateSession(s.id, {
+      turfName: s.turfName, location: joinLocation(loc.name, url),
+      slotStart: s.slotStart, slotMinutes: s.slotMinutes,
+      playersPerSide: s.playersPerSide, totalFee: s.totalFee, scoring: s.scoring,
+    }).then(() => { ctx.reload(); setSavingLink(false); setLinkInput(''); })
+      .catch((e) => { setSavingLink(false); ctx.alert(e.message || 'Could not save the location link.'); });
+  };
+
   const liveCount = ctx.matches.filter((m) => m.status === 'live').length;
   const doneCount = ctx.matches.filter((m) => m.status === 'done').length;
   // Per-match length comes from the schedule's OWN stored duration (capped at 20 min at build
@@ -87,7 +103,23 @@ export function DetailScreen({ ctx }) {
         <div className="row" style={{ gap: 10 }}><StatusPill status={s.status} /><span className="tag">{s.playersPerSide}-A-SIDE</span>{ctx.locked && <StatusPill status="locked" />}</div>
         <button className="btn btn--ghost btn--sm" onClick={() => ctx.go('sessions')}>All sessions</button>
       </div>
-      <div className="row muted" style={{ gap: 6, fontSize: 14, margin: '10px 0 14px' }}><Icon name="location" className="ico" style={{ width: 15, height: 15 }} />{s.location}</div>
+      <div className="row between wrap" style={{ gap: 10, margin: '10px 0 14px' }}>
+        <div className="row muted" style={{ gap: 6, fontSize: 14 }}>
+          <Icon name="location" className="ico" style={{ width: 15, height: 15 }} />
+          {loc.name || <span style={{ fontStyle: 'italic' }}>No location set</span>}
+        </div>
+        {loc.mapUrl ? (
+          <a className="btn btn--sm maps-btn" href={loc.mapUrl} target="_blank" rel="noopener noreferrer">
+            <Icon name="gmaps" className="ico" /> Open in Google Maps
+          </a>
+        ) : ctx.isAdmin ? (
+          <div className="row wrap" style={{ gap: 6 }}>
+            <input className="input maps-input" placeholder="Give your location link" value={linkInput}
+              onChange={(e) => setLinkInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') saveLink(); }} />
+            <button className="btn btn--accent btn--sm" disabled={savingLink || !linkInput.trim()} onClick={saveLink}>{savingLink ? 'Saving…' : 'Submit'}</button>
+          </div>
+        ) : null}
+      </div>
 
       <div className="row between wrap" style={{ gap: 10, marginBottom: 20 }}>
         <div className="row" style={{ gap: 8, alignItems: 'center' }}>
