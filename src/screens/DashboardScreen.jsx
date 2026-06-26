@@ -39,63 +39,89 @@ export function DashboardScreen({ ctx }) {
     return out;
   };
 
-  const Row = ({ s }) => (
-    <div className="card card--pad" style={{ cursor: 'pointer', marginBottom: 10 }} onClick={() => open(s)}>
-      <div className="row between" style={{ gap: 10 }}>
-        <div className="row" style={{ gap: 10, minWidth: 0 }}>
+  const Tile = ({ s, i }) => (
+    <div className="card card--pad dash-tile dash-row" style={{ '--i': i }} onClick={() => open(s)}>
+      <div className="dash-tile__top">
+        <div className="row" style={{ gap: 8 }}>
           <StatusPill status={s.status} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.turfName}</div>
-            <div className="muted mono" style={{ fontSize: 10.5 }}>{dateLabel(s.slotStart)} · {timeOfDay(s.slotStart)} · {memberCount(s.id)} in</div>
-          </div>
+          {iManage(s) && <span className="tag tag--org">{s.createdBy === me ? 'CREATOR' : 'ORGANIZER'}</span>}
         </div>
-        {iManage(s) && <span className="tag tag--org">{s.createdBy === me ? 'CREATOR' : 'ORGANIZER'}</span>}
+        <Icon name="arrowR" className="ico" style={{ color: 'var(--chalk-faint)', flex: 'none' }} />
       </div>
-      <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
-        {flagsFor(s).map((f, i) => <DashFlag key={i} label={f.label} tone={f.tone} />)}
+      <div>
+        <div className="dash-tile__title">{s.turfName}</div>
+        <div className="dash-tile__meta">{dateLabel(s.slotStart)} · {timeOfDay(s.slotStart)} · {memberCount(s.id)} in</div>
+      </div>
+      <div className="dash-tile__flags">
+        {flagsFor(s).map((f, i2) => <DashFlag key={i2} label={f.label} tone={f.tone} />)}
       </div>
     </div>
   );
 
   const Group = ({ title, items, empty }) => (
-    <div style={{ marginBottom: 22 }}>
+    <div style={{ marginBottom: 24 }}>
       <div className="section-title">{title}</div>
-      {items.length === 0 ? <div className="muted" style={{ fontSize: 13 }}>{empty}</div> : items.map((s) => <Row key={s.id} s={s} />)}
+      {items.length === 0
+        ? <div className="muted" style={{ fontSize: 13 }}>{empty}</div>
+        : <div className="dash-grid">{items.map((s, i) => <Tile key={s.id} s={s} i={i} />)}</div>}
     </div>
   );
 
-  const Stat = ({ k, v, c }) => (
-    <div className="surface" style={{ padding: '14px 16px' }}>
-      <div className="muted mono" style={{ fontSize: 10, letterSpacing: '.1em' }}>{k}</div>
-      <div className="num" style={{ fontSize: 24, marginTop: 2, color: c }}>{v}</div>
+  const Stat = ({ icon, k, v, c }) => (
+    <div className="surface dash-stat" style={c ? { '--accent-stat': c } : undefined}>
+      <div className="icon-badge"><Icon name={icon} className="ico" /></div>
+      <div>
+        <div className="muted mono" style={{ fontSize: 10, letterSpacing: '.1em' }}>{k}</div>
+        <div className="num" style={{ fontSize: 23, marginTop: 1, color: c }}>{v}</div>
+      </div>
     </div>
   );
 
   return (
     <div className="page">
-      <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 30, margin: 0, letterSpacing: '.01em' }}>
+      <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 30, margin: '0 0 18px', letterSpacing: '.01em' }}>
         {myName && myName !== '—' ? `Hi, ${myName}` : 'Dashboard'}
       </h1>
-      <p className="muted" style={{ margin: '3px 0 18px', fontSize: 14 }}>Your matchday activity at a glance.</p>
 
-      <div className="grid-auto" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', marginBottom: 22 }}>
-        <Stat k="SESSIONS" v={sessions.length} />
-        <Stat k="SPENT" v={stats ? taka(stats.totalSpent) : '—'} />
-        <Stat k="OUTSTANDING" v={stats ? taka(stats.outstanding) : '—'} c={stats && stats.outstanding > 0 ? 'var(--amber)' : 'var(--accent)'} />
-        <Stat k="GOALS LOGGED" v={stats ? stats.goalCount : '—'} />
+      {ongoing.map((s, i) => (
+        <div key={s.id} className="card dash-hero dash-row" style={{ '--i': i, marginBottom: 16 }} onClick={() => open(s)}>
+          <div className="row between wrap" style={{ gap: 12 }}>
+            <div className="row" style={{ gap: 12 }}>
+              <span className="pill pill--live"><span className="dot" /> LIVE NOW</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 17 }}>{s.turfName}</div>
+                <div className="muted mono" style={{ fontSize: 11 }}>{dateLabel(s.slotStart)} · {timeOfDay(s.slotStart)} · {memberCount(s.id)} in</div>
+              </div>
+            </div>
+            <button className="btn btn--accent btn--sm" onClick={(e) => { e.stopPropagation(); ctx.openSession(s.id); ctx.go('live'); }}>
+              <Icon name="live" className="ico" /> Open Live
+            </button>
+          </div>
+          <div className="row wrap" style={{ gap: 6, marginTop: 12 }}>
+            {flagsFor(s).map((f, i2) => <DashFlag key={i2} label={f.label} tone={f.tone} />)}
+          </div>
+        </div>
+      ))}
+
+      <div className="grid-auto" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', marginBottom: 22 }}>
+        <Stat icon="sessions" k="SESSIONS" v={sessions.length} />
+        <Stat icon="expenses" k="SPENT" v={stats ? taka(stats.totalSpent) : '—'} />
+        <Stat icon="clock" k="OUTSTANDING" v={stats ? taka(stats.outstanding) : '—'} c={stats && stats.outstanding > 0 ? 'var(--amber)' : 'var(--accent)'} />
+        <Stat icon="trophy" k="GOALS LOGGED" v={stats ? stats.goalCount : '—'} />
       </div>
 
-      {sessions.length === 0 && (
+      {sessions.length === 0 ? (
         <div className="card card--pad" style={{ marginBottom: 20 }}>
           <div className="section-title" style={{ margin: 0 }}>No sessions yet</div>
           <p className="muted" style={{ fontSize: 13.5 }}>Create a session or join one with a code.</p>
           <button className="btn btn--accent" onClick={() => ctx.go('sessions')}><Icon name="sessions" className="ico" /> Go to My Sessions</button>
         </div>
+      ) : (
+        <>
+          <Group title="Upcoming" items={upcoming} empty="Nothing scheduled yet." />
+          <Group title="Recent" items={recent} empty="No past sessions yet." />
+        </>
       )}
-
-      <Group title="Ongoing" items={ongoing} empty="No live match right now." />
-      <Group title="Upcoming" items={upcoming} empty="Nothing scheduled yet." />
-      <Group title="Recent" items={recent} empty="No past sessions yet." />
     </div>
   );
 }

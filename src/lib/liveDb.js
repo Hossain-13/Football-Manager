@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
 import { DB as MOCK_DB } from './db.js';
+import { firstLetter } from './format.js';
 
 const asNumber = (value, fallback = 0) => {
   const n = Number(value);
@@ -25,7 +26,7 @@ export function createDbView(data, currentUserId) {
     initials: (id) => {
       const p = profileMap.get(id);
       if (!p) return '?';
-      return (p.firstName[0] + (p.lastName ? p.lastName[0] : (p.firstName[1] || ''))).toUpperCase();
+      return (firstLetter(p.firstName) + (p.lastName ? firstLetter(p.lastName) : firstLetter(p.firstName.slice(1)))).toUpperCase();
     },
     name: (id) => profileName(profileMap.get(id)) || '—',
     first: (id) => profileMap.get(id)?.firstName || '—',
@@ -485,6 +486,31 @@ export async function savePayments(payments) {
     const { error } = await supabase.from('payments').upsert(guests, { onConflict: 'session_id,guest_name' });
     if (error) throw error;
   }
+}
+
+// Surgical single-row writes — mirror saveAvailabilityRow's pattern below. The bulk
+// saveExpenses/savePayments above re-upload this client's ENTIRE local snapshot on every edit;
+// if another client's edit landed since this one last loaded, that bulk write silently
+// overwrites it with stale data (the same class of bug fixed for Availability/Formation — see
+// BUILD_LOG.md). ExpensesScreen now calls these for single add/edit actions instead.
+export async function saveExpenseRow(e) {
+  const { error } = await supabase.from('expenses').upsert({
+    id: isUuid(e.id) ? e.id : undefined,
+    session_id: e.sessionId,
+    label: e.label,
+    amount: e.amount,
+    created_by: e.createdBy,
+  });
+  if (error) throw error;
+}
+export async function savePaymentRow(p) {
+  const key = p.key || p.profileId || (p.guestName ? 'g:' + p.guestName : null);
+  if (!key) return;
+  const base = { session_id: p.sessionId, amount_due: p.amountDue, amount_paid: p.amountPaid, method: p.method, confirmed_by: p.confirmedBy || null };
+  const row = String(key).startsWith('g:') ? { ...base, guest_name: key.slice(2) } : { ...base, profile_id: key };
+  const onConflict = String(key).startsWith('g:') ? 'session_id,guest_name' : 'session_id,profile_id';
+  const { error } = await supabase.from('payments').upsert(row, { onConflict });
+  if (error) throw error;
 }
 
 function mapProfile(row) {

@@ -40,16 +40,18 @@ export function LiveScreen({ ctx }) {
   const canControl = ctx.canManage || ctx.isCaptain;
   const controlLabel = ctx.canManage ? (ctx.isAdmin ? 'ADMIN MODE' : 'ORGANIZER MODE') : 'CAPTAIN MODE';
   const reason = 'Only admins, organizers, or match captains can score';
+
   // Goals are DERIVED from live data so scorer tags sync to all viewers via realtime (no stale
   // local copy). saveGoals upserts; the new goal gets a real UUID so the insert is valid.
   const goals = DATA.goals.filter((g) => g.matchId === live.id);
   const [tagFor, setTagFor] = useState(null);
-
-  const setScore = (side, val) => ctx.updateMatch(live.id, { [side]: Math.max(0, val) });
+  const teamGoals = (tid) => goals.filter((g) => g.teamId === tid);
   const addGoal = (teamId, scorerId) => {
     ctx.saveGoals?.([...goals, { id: newId('goal'), matchId: live.id, teamId, scorerId, minute: 0 }]);
     setTagFor(null);
   };
+
+  const setScore = (side, val) => ctx.updateMatch(live.id, { [side]: Math.max(0, val) });
   const finish = () => {
     const idx = matches.findIndex((m) => m.id === live.id);
     ctx.updateMatch(live.id, { status: 'done' });
@@ -57,16 +59,28 @@ export function LiveScreen({ ctx }) {
     if (nx) ctx.updateMatch(nx.id, { status: 'live' });
   };
 
-  const queue = matches.filter((m) => m.status === 'scheduled').slice(0, 4);
-  const teamGoals = (tid) => goals.filter((g) => g.teamId === tid);
+  const queue = matches.filter((m) => m.status === 'scheduled').slice(0, 2);
+
+  const TagButton = ({ T }) => (
+    <RoleGate can={canControl} reason="Captains only" inline>
+      <button className="btn btn--ghost btn--sm" onClick={() => setTagFor(tagFor === T.id ? null : T.id)}><Icon name="plus" className="ico" /> Tag</button>
+    </RoleGate>
+  );
+  const ChipList = ({ T }) => (
+    <>{teamGoals(T.id).map((g) => (
+      <span key={g.id} className="tag">{g.scorerId ? keyFirst(g.scorerId) : 'OG'}</span>
+    ))}</>
+  );
+  const TagPicker = ({ T }) => (tagFor === T.id ? (
+    <div className="row wrap" style={{ gap: 6, marginTop: 10, padding: 8, background: 'rgba(0,0,0,.2)', borderRadius: 10 }}>
+      {(DATA.teamPlayers[T.id] || []).map((pid) => <button key={pid} className="btn btn--sm" onClick={() => addGoal(T.id, pid)}>{keyFirst(pid)}</button>)}
+    </div>
+  ) : null);
 
   return (
     <div className="page">
       <div className="row between wrap" style={{ marginBottom: 14, gap: 10 }}>
-        <div className="row" style={{ gap: 10 }}>
-          <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 30, margin: 0 }}>Live Match</h1>
-          <span className="mono muted" style={{ fontSize: 12, alignSelf: 'center' }}>MATCH {live.matchNo} of {matches.length}</span>
-        </div>
+        <span className="mono muted" style={{ fontSize: 12.5 }}>MATCH {live.matchNo} of {matches.length}</span>
         <div className="row" style={{ gap: 8 }}>
           {canControl ? <span className="pill pill--live"><span className="dot" /> {controlLabel}</span>
             : <span className="pill"><Icon name="lock" className="ico" style={{ width: 13, height: 13 }} /> VIEW ONLY</span>}
@@ -74,50 +88,28 @@ export function LiveScreen({ ctx }) {
       </div>
 
       <div className="grid-2" style={{ gridTemplateColumns: '1fr', gap: 16 }}>
-        <TimerDisplay
-          match={live}
-          can={canControl}
-          reason={reason}
-          onTimerChange={(patch) => ctx.updateMatch(live.id, patch)}
-        />
-
-        <div className="card card--pad">
-          <div className="scoreboard">
-            <ScoreStepper team={A} score={live.scoreA} can={canControl} onChange={(v) => setScore('scoreA', v)} />
-            <div className="vs">VS</div>
-            <ScoreStepper team={B} score={live.scoreB} can={canControl} onChange={(v) => setScore('scoreB', v)} />
+        <div className="card card--pad live-hero">
+          <div>
+            <ScoreStepper team={A} score={live.scoreA} can={canControl} onChange={(v) => setScore('scoreA', v)} tagSlot={<TagButton T={A} />} chipsSlot={<ChipList T={A} />} />
+            <TagPicker T={A} />
           </div>
-
-          {/* goal scorer tags */}
-          <hr className="divline" />
-          <div className="grid-2">
-            {[A, B].map((T) => (
-              <div key={T.id}>
-                <div className="row between" style={{ marginBottom: 8 }}>
-                  <span className="row" style={{ gap: 6, fontFamily: 'var(--f-display)', fontWeight: 600 }}><TeamDot color={T.color} /> {T.name} scorers</span>
-                  {canControl && <button className="btn btn--sm btn--ghost" onClick={() => setTagFor(tagFor === T.id ? null : T.id)}><Icon name="plus" className="ico" /> Tag</button>}
-                </div>
-                <div className="row wrap" style={{ gap: 6 }}>
-                  {teamGoals(T.id).map((g) => (
-                    <span key={g.id} className="tag" style={{ background: T.color + '22', color: '#fff', fontSize: 11 }}>⚽ {g.scorerId ? keyFirst(g.scorerId) : 'OG'}</span>
-                  ))}
-                  {teamGoals(T.id).length === 0 && <span className="muted" style={{ fontSize: 12 }}>No scorers tagged</span>}
-                </div>
-                {tagFor === T.id && (
-                  <div className="row wrap" style={{ gap: 6, marginTop: 8, padding: 8, background: 'rgba(0,0,0,.2)', borderRadius: 10 }}>
-                    {(DATA.teamPlayers[T.id] || []).map((pid) => <button key={pid} className="btn btn--sm" onClick={() => addGoal(T.id, pid)}>{keyFirst(pid)}</button>)}
-                  </div>
-                )}
-              </div>
-            ))}
+          <TimerDisplay
+            match={live}
+            can={canControl}
+            reason={reason}
+            onTimerChange={(patch) => ctx.updateMatch(live.id, patch)}
+          />
+          <div>
+            <ScoreStepper team={B} score={live.scoreB} can={canControl} onChange={(v) => setScore('scoreB', v)} tagSlot={<TagButton T={B} />} chipsSlot={<ChipList T={B} />} />
+            <TagPicker T={B} />
           </div>
+        </div>
 
-          <div className="row between" style={{ marginTop: 18 }}>
-            <RoleGate can={canControl} reason="Captains only" inline>
-              <button className="btn btn--accent" onClick={finish}><Icon name="check" className="ico" /> Full time &amp; next</button>
-            </RoleGate>
-            <span className="muted" style={{ fontSize: 12.5 }}>{!canControl && <span className="row" style={{ gap: 6, color: 'var(--amber)' }}><Icon name="lock" className="ico" /> Admins, organizers, or captains can control</span>}</span>
-          </div>
+        <div className="card card--pad row between wrap" style={{ gap: 12 }}>
+          <RoleGate can={canControl} reason="Captains only" inline>
+            <button className="btn btn--accent" onClick={finish}><Icon name="check" className="ico" /> Full time &amp; next</button>
+          </RoleGate>
+          {!canControl && <span className="row" style={{ gap: 6, color: 'var(--amber)', fontSize: 12.5 }}><Icon name="lock" className="ico" /> Admins, organizers, or captains can control</span>}
         </div>
 
         {/* next match queue */}

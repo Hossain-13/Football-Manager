@@ -1,0 +1,81 @@
+/impeccable craft Live page rework, Standings+Schedule merge, signature animations, refresh-state fix
+
+CONTEXT (maps to BUILD_LOG.md pending items 4, 9/10/Round 5-7 territory — "Live page layout",
+"Table and Schedule... shown inside one single page", and the refresh/welcome-popup bug):
+Read DESIGN.md, PRODUCT.md, BUILD_LOG.md from disk first. This is the last of 4 scoped rounds in
+this rework pass — build on Rounds 1-4 already shipped and Prompts 1-3 already applied, don't
+redo any of that work.
+
+If your first plan looks like it's touching more than the four items below in one diff, stop and
+propose splitting into smaller `craft` passes in this same chat.
+
+SCOPE & GOALS:
+
+1. Live page circular timer (src/components/signature.jsx — TimerDisplay component, rendered
+   from src/screens/LiveScreen.jsx): open https://dribbble.com/shots/2391856-Soccer-App yourself
+   and study its circular timer-in-the-middle layout with team names/scores on either side.
+   Rework TimerDisplay so the clock is a circular progress ring (the ring fill = elapsed/duration,
+   same as the existing pct calculation already does for the linear bar) with play/pause control
+   placed in the center of the ring. Place ScoreStepper for team A and team B on either side of
+   the ring so the whole thing reads as one composed unit, not three stacked cards. Keep every
+   prop and the onTimerChange/onChange callback contracts exactly as they are — this is a
+   markup/CSS rework inside TimerDisplay and the LiveScreen layout that assembles it, not new
+   data or new write paths.
+   - The plus/minus score steppers and "Tag" goal-scorer button must stay reachable and tappable
+     without crowding the ring — place them with clear visual separation, not removed.
+   - Since the ring + side-by-side layout saves vertical space, show only the next 2 upcoming
+     matches in the "Up next" section (currently shows up to 4) instead of removing it.
+   - Open https://dribbble.com/shots/27071154-Football-Live-Score-Match-UI-Mobile-App yourself
+     too, for how a live match screen organizes secondary info (next matches, in this case)
+     around a hero score/clock element without compacting the primary info.
+   - Do this for both mobile and desktop — the ring + side scores should reflow sensibly at the
+     existing breakpoints, not just work at one width.
+
+2. Standings + Schedule merge: combine StandingsScreen.jsx and ScheduleScreen.jsx content into a
+   single page (e.g. as tabs or a segmented toggle at the top of one screen, using the existing
+   `.seg` component pattern already used elsewhere in the app) rather than two separate nav
+   destinations that are each empty most of the time. Open
+   https://dribbble.com/shots/27450993-Gaffer-Football-Team-Management-App yourself again for
+   layout/spacing taste on how a combined fixtures+table view can be organized.
+   - Keep StandingsTable and the fixture-list rendering exactly as their own components/logic —
+     this is a page-composition change (one screen hosting both, with a toggle), not a rewrite of
+     either's internals.
+   - Update nav.jsx (NAV_SESSION, TABS) and App.jsx's screens/titles map to point both "Schedule"
+     and "Standings" nav entries at the merged screen (or collapse to one nav entry — your call on
+     whichever requires the smaller diff to ctx/routing).
+   - Since this frees a slot in the mobile floating tab bar, move Expenses into the bottom tabbar
+     (TABS in nav.jsx) in the slot that opens up, instead of leaving it reachable only via More.
+
+3. Small signature animations: add tasteful, reduced-motion-respecting animation to:
+   - Schedule/Standings transitions (the merged page from #2) when switching tabs.
+   - Live page state changes (score increment, timer tick crossing into the ring).
+   - Popups/modals already in src/components/dialog.jsx and the modal-backdrop/modal-card
+     pattern in App.jsx (Get started/Welcome back) — entrance/exit motion using the easing token
+     already defined (ease-out-expo) rather than introducing new easing curves.
+   Use the existing --glow, pill--live blink, and dash-rise keyframes as the house style to match
+   rather than inventing an unrelated motion language.
+
+4. Refresh-resets-to-dashboard bug (App.jsx): on a hard browser refresh, the user is dropped back
+   to the dashboard and the Get-started/Welcome-back modal reappears even for returning users
+   mid-session. Root cause: `screen`/`activeId` are read from in-memory state with pushState on
+   navigation, but nothing reads the screen back from the URL/history on initial mount. Fix this
+   by persisting/restoring the current screen+activeId across a hard reload (e.g. read from
+   window.location or sessionStorage on mount, falling back to dashboard only when there's truly
+   nothing to restore) and make sure the welcome modal's "already seen" check (the existing
+   localStorage turf_welcomed_<userId> key) isn't retriggered by this fix. This is navigation/UI
+   state plumbing — do not touch authentication, RLS, or data-loading logic to achieve it.
+
+CONSTRAINTS:
+- No functionality / data-flow changes — the refresh fix above is the one exception, and it is
+  scoped to navigation/UI state only, not auth or data logic. Score/clock writes, RLS, and the
+  ctx.updateMatch / saveFormation / saveAvailRow patterns documented in CLAUDE.md must not change.
+- Stay inside the existing token system (styles.css) — extend, don't replace.
+- Must build clean (`npm run build`) before you call it done.
+- Mobile-first; verify at existing breakpoints, both portrait phone and desktop width.
+- Respect prefers-reduced-motion everywhere new motion is added.
+
+OUT OF SCOPE:
+- Formation/Team Builder/Expenses internals — untouched this round (Expenses nav placement only
+  changes per #2, not its internal layout from Prompt 3).
+- Any RLS, schema, or liveDb.js change beyond what #4 explicitly requires (and #4 requires none —
+  it's pure client navigation state).

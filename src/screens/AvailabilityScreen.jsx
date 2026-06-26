@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Icon } from '../components/Icon.jsx';
-import { Avatar, Countdown, RoleGate } from '../components/core.jsx';
+import { Avatar, LockRing, RoleGate } from '../components/core.jsx';
 import { DATA } from '../lib/dataView.js';
-import { dateLabel, timeOfDay, newId } from '../lib/format.js';
+import { newId } from '../lib/format.js';
 
 export function AvailabilityScreen({ ctx }) {
   const s = ctx.session;
@@ -89,29 +89,25 @@ export function AvailabilityScreen({ ctx }) {
 
   return (
     <div className="page">
-      <div className="row between wrap" style={{ marginBottom: 18, gap: 12 }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 30, margin: 0 }}>Availability</h1>
-          <p className="muted" style={{ margin: '3px 0 0', fontSize: 14 }}>{s.turfName} · {dateLabel(s.slotStart)} · {timeOfDay(s.slotStart)}</p>
+      {/* lock countdown + my status, side by side for page balance instead of a floating
+          isolated card with empty space beside it */}
+      <div className="av-top">
+        <div className="card card--pad av-top__ring">
+          <LockRing to={new Date(lockAt).toISOString()} label="LOCK IN" />
+          <div className="muted" style={{ fontSize: 10.5, textAlign: 'center', maxWidth: 110 }}>1h before kick-off (players)</div>
         </div>
-        <div className="card card--pad" style={{ padding: '10px 16px', textAlign: 'center' }}>
-          <div className="muted mono" style={{ fontSize: 9.5, letterSpacing: '.1em' }}>TEAMS LOCK IN</div>
-          <div className="num" style={{ fontSize: 24, color: 'var(--amber)' }}><Countdown to={new Date(lockAt).toISOString()} expired="LOCKED" /></div>
-          <div className="muted" style={{ fontSize: 10.5 }}>1h before kick-off (players)</div>
-        </div>
-      </div>
 
-      {/* my status */}
-      <div className="card card--pad" style={{ marginBottom: 18 }}>
-        <div className="row between wrap" style={{ gap: 12 }}>
-          <div className="row" style={{ gap: 12 }}>
-            <Avatar id={me} size={42} />
-            <div><div style={{ fontWeight: 700, fontSize: 16 }}>{DATA.name(me)} <span className="muted" style={{ fontWeight: 400, fontSize: 13 }}>(you)</span></div><div className="muted" style={{ fontSize: 12.5 }}>{ctx.locked ? 'Locked — within 1h of kick-off' : 'Are you playing this match?'}</div></div>
-          </div>
-          <div className="av-toggle" style={{ transform: 'scale(1.05)' }}>
-            {['available', 'out'].map((k) => (
-              <button key={k} className={mine === k ? 'on ' + k : ''} onClick={() => setMyStatus(k)} disabled={ctx.locked}>{k === 'available' ? "I'm in" : 'Out'}</button>
-            ))}
+        <div className="card card--pad av-top__status">
+          <div className="row between wrap" style={{ gap: 12, width: '100%' }}>
+            <div className="row" style={{ gap: 12 }}>
+              <Avatar id={me} size={42} />
+              <div><div style={{ fontWeight: 700, fontSize: 16 }}>{DATA.name(me)} <span className="muted" style={{ fontWeight: 400, fontSize: 13 }}>(you)</span></div><div className="muted" style={{ fontSize: 12.5 }}>{ctx.locked ? 'Locked — within 1h of kick-off' : 'Are you playing this match?'}</div></div>
+            </div>
+            <div className="av-toggle" style={{ transform: 'scale(1.05)' }}>
+              {['available', 'out'].map((k) => (
+                <button key={k} className={mine === k ? 'on ' + k : ''} onClick={() => setMyStatus(k)} disabled={ctx.locked}>{k === 'available' ? "I'm in" : 'Out'}</button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

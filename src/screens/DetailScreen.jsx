@@ -36,7 +36,7 @@ export function DetailScreen({ ctx }) {
   const doDelete = () => {
     setDelBusy(true);
     deleteSession(s.id).then(() => { ctx.reload(); ctx.go('sessions'); })
-      .catch((e) => { setDelBusy(false); setConfirmDel(false); window.alert(e.message || 'Delete failed (locked within 24h of kick-off).'); });
+      .catch((e) => { setDelBusy(false); setConfirmDel(false); ctx.alert(e.message || 'Delete failed (locked within 24h of kick-off).'); });
   };
 
   const [tb, setTb] = useState(s.scoring.tiebreakers);
@@ -85,8 +85,7 @@ export function DetailScreen({ ctx }) {
         <div className="row" style={{ gap: 10 }}><StatusPill status={s.status} /><span className="tag">{s.playersPerSide}-A-SIDE</span>{ctx.locked && <StatusPill status="locked" />}</div>
         <button className="btn btn--ghost btn--sm" onClick={() => ctx.go('sessions')}>All sessions</button>
       </div>
-      <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 32, margin: '6px 0 2px' }}>{s.turfName}</h1>
-      <div className="row muted" style={{ gap: 6, fontSize: 14, marginBottom: 14 }}><Icon name="location" className="ico" style={{ width: 15, height: 15 }} />{s.location}</div>
+      <div className="row muted" style={{ gap: 6, fontSize: 14, margin: '10px 0 14px' }}><Icon name="location" className="ico" style={{ width: 15, height: 15 }} />{s.location}</div>
 
       <div className="row between wrap" style={{ gap: 10, marginBottom: 20 }}>
         <div className="row" style={{ gap: 8, alignItems: 'center' }}>
@@ -108,7 +107,7 @@ export function DetailScreen({ ctx }) {
         <Stat k="PROGRESS" v={`${doneCount}/${ctx.matches.length}`} sub={liveCount ? 'Match in play' : 'Matches done'} />
       </div>
 
-      {ctx.isAdmin ? <GateBanner reason="You’re the creator — manage this session; choose organizers on the Availability page." /> :
+      {ctx.isAdmin ? <GateBanner reason="You’re the creator — manage this session; choose organizers on the IN/OUT page." /> :
         org && <GateBanner reason="You’re an organizer — matchday controls are editable." />}
 
       <div className="card card--pad" style={{ marginTop: 16 }}>

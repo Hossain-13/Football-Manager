@@ -46,10 +46,7 @@ export function FormationScreen({ ctx }) {
   return (
     <div className="page page--narrow">
       <div className="row between wrap" style={{ marginBottom: 14, gap: 12 }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 30, margin: 0 }}>Formation</h1>
-          <p className="muted" style={{ margin: '3px 0 0', fontSize: 14 }}>Tactical board — drag tokens, pick a preset. No more MS Paint.</p>
-        </div>
+        <p className="muted" style={{ margin: 0, fontSize: 14 }}>Tactical board — drag tokens, pick a preset.</p>
         <div className="row" style={{ gap: 10 }}>
           <div className="seg" title="Players per side">
             {[5, 6, 7].map((n) => (

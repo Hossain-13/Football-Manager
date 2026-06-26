@@ -5,7 +5,7 @@ import { DATA } from '../lib/dataView.js';
 
 export const NAV_SESSION = [
   { id: 'detail', label: 'Overview', icon: 'flag' },
-  { id: 'availability', label: 'Availability', icon: 'squad' },
+  { id: 'availability', label: 'IN/OUT', icon: 'squad' },
   { id: 'teams', label: 'Team Builder', icon: 'teams' },
   { id: 'formation', label: 'Formation', icon: 'formation' },
   { id: 'schedule', label: 'Schedule', icon: 'schedule' },
@@ -15,7 +15,7 @@ export const NAV_SESSION = [
   { id: 'expenses', label: 'Expenses', icon: 'expenses' },
 ];
 
-export function Sidebar({ screen, go, sessions, activeId, openSession }) {
+export function Sidebar({ screen, go, sessions, activeId, openSession, onLogout }) {
   // which session groups are expanded; the active one auto-expands.
   const [expanded, setExpanded] = useState(() => new Set(activeId ? [activeId] : []));
   useEffect(() => { if (activeId) setExpanded((prev) => new Set(prev).add(activeId)); }, [activeId]);
@@ -68,56 +68,72 @@ export function Sidebar({ screen, go, sessions, activeId, openSession }) {
       })}
 
       <div className="sidebar__foot">
+        <button className="nav-item" onClick={onLogout}>
+          <Icon name="logout" className="ico" /><span>Log out</span>
+        </button>
         <button className={'nav-item' + (screen === 'profile' ? ' nav-item--active' : '')} onClick={() => go('profile')}>
-          <Avatar id={DATA.currentUserId} size={22} />
-          <span style={{ fontWeight: 700, color: 'var(--chalk)' }}>{DATA.name(DATA.currentUserId)}</span>
+          <Avatar id={DATA.currentUserId} size={22} /><span>Profile</span>
         </button>
       </div>
     </aside>
   );
 }
 
+/* core matchday destinations live in the floating bar; Live sits raised in the centre. */
 export const TABS = [
   { id: 'dashboard', label: 'Home', icon: 'grid' },
   { id: 'sessions', label: 'Sessions', icon: 'sessions' },
-  { id: 'live', label: 'Live', icon: 'live' },
-  { id: 'standings', label: 'Table', icon: 'standings' },
-  { id: 'more', label: 'More', icon: 'more' },
+  { id: 'availability', label: 'IN/OUT', icon: 'squad' },
+  { id: 'live', label: 'Live', icon: 'live', center: true },
+  { id: 'schedule', label: 'Schedule', icon: 'schedule' },
+  { id: 'expenses', label: 'Expenses', icon: 'expenses' },
+  { id: 'more', label: 'More', icon: 'moreGrid' },
 ];
 
 export function BottomTabBar({ screen, go }) {
-  const activeTab = TABS.some((t) => t.id === screen) ? screen : (screen === 'profile' || NAV_SESSION.some((n) => n.id === screen) ? 'more' : screen);
+  const activeTab = TABS.some((t) => t.id === screen) ? screen
+    : (screen === 'profile' || NAV_SESSION.some((n) => n.id === screen) ? 'more' : null);
   return (
     <nav className="tabbar">
-      {TABS.map((t) => (
-        <button key={t.id} className={'tab' + (activeTab === t.id ? ' on' : '')} onClick={() => go(t.id)}>
-          <Icon name={t.icon} className="ico" />
-          <span>{t.label}</span>
-        </button>
-      ))}
+      {TABS.map((t) => {
+        const on = activeTab === t.id;
+        return (
+          <button
+            key={t.id} className={'tab' + (t.center ? ' tab--center' : '') + (on ? ' on' : '')}
+            onClick={() => go(t.id)} aria-current={on ? 'page' : undefined}
+          >
+            <span className={t.center ? 'tab__fab' : 'tab__mark'}><Icon name={t.icon} className="ico" /></span>
+            <span>{t.label}</span>
+          </button>
+        );
+      })}
     </nav>
   );
 }
 
-/* "More" sheet for mobile — links to remaining screens */
-export function MoreScreen({ go, sessionName }) {
-  // bottom tabs already cover Live + Standings; show the rest of the active session here.
-  const items = [
-    ...NAV_SESSION.filter((n) => !['live', 'standings'].includes(n.id)),
-    { id: 'profile', label: 'Profile', icon: 'profile' },
-  ];
+/* "More" sheet for mobile — secondary screens not already in the floating bar, grouped. */
+const MORE_GROUPS = [
+  { label: 'Matchday', items: NAV_SESSION.filter((n) => !['availability', 'schedule', 'live', 'expenses'].includes(n.id)) },
+  { label: 'Account', items: [{ id: 'profile', label: 'Profile', icon: 'profile' }] },
+];
+export function MoreScreen({ go }) {
+  // bottom tabs already cover Live + Standings; everything else for the active session lives here.
   return (
     <div className="page">
-      <h2 style={{ fontFamily: 'var(--f-display)', fontSize: 26, margin: '4px 0 4px' }}>More</h2>
-      {sessionName && <p className="muted" style={{ margin: '0 0 18px', fontSize: 13 }}>{sessionName}</p>}
-      <div className="card">
-        {items.map((it, i) => (
-          <button key={it.id} className="nav-item" style={{ borderBottom: i < items.length - 1 ? '1px solid var(--line-soft)' : 'none', borderRadius: 0, padding: '15px 16px' }} onClick={() => go(it.id)}>
-            <Icon name={it.icon} className="ico" /><span style={{ fontSize: 15 }}>{it.label}</span>
-            <Icon name="chevron" className="ico" style={{ marginLeft: 'auto', color: 'var(--chalk-faint)' }} />
-          </button>
-        ))}
-      </div>
+      {MORE_GROUPS.map((group) => (
+        <div key={group.label} style={{ marginBottom: 20 }}>
+          <div className="nav-group__label" style={{ padding: '0 2px 8px' }}>{group.label}</div>
+          <div className="card">
+            {group.items.map((it, i) => (
+              <button key={it.id} className="nav-item" style={{ borderBottom: i < group.items.length - 1 ? '1px solid var(--line-soft)' : 'none', borderRadius: 0, padding: '15px 16px' }} onClick={() => go(it.id)}>
+                <Icon name={it.icon} className="ico" /><span style={{ fontSize: 15 }}>{it.label}</span>
+                {it.live && <span className="nav-item__badge">LIVE</span>}
+                <Icon name="chevron" className="ico" style={{ marginLeft: 'auto', color: 'var(--chalk-faint)' }} />
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

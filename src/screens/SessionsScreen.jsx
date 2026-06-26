@@ -49,6 +49,26 @@ export function AddSessionModal({ ctx, onClose }) {
   );
 }
 
+export function JoinByCodeModal({ code, setCode, busy, err, onClose, onLookup }) {
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-card" style={{ maxWidth: 380, textAlign: 'left' }} onClick={(e) => e.stopPropagation()}>
+        <h2 style={{ fontFamily: 'var(--f-display)', fontSize: 22, margin: '0 0 6px' }}>Join a session</h2>
+        <p className="muted" style={{ fontSize: 13, margin: '0 0 14px' }}>Enter the share code the organizer sent you.</p>
+        <Field label="Share code">
+          <input className="input" autoFocus placeholder="e.g. TURF-9F4KQ" value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === 'Enter' && onLookup()} />
+        </Field>
+        {err && <p className="muted" style={{ color: 'var(--amber)', fontSize: 12.5, margin: '10px 0 0' }}>{err}</p>}
+        <div className="row" style={{ gap: 8, marginTop: 14 }}>
+          <button className="btn btn--accent grow" disabled={busy || !code.trim()} onClick={onLookup}>{busy ? 'Looking up...' : 'Look up'}</button>
+          <button className="btn btn--ghost" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function JoinConfirmModal({ peek, busy, onCancel, onConfirm }) {
   const feePer = peek.totalFee ? Math.round(peek.totalFee / ((peek.memberCount || 0) + 1)) : 0;
   return (
@@ -79,6 +99,7 @@ export function SessionsScreen({ ctx }) {
   const upcoming = DATA.sessions.filter((s) => s.status !== 'done');
   const past = DATA.sessions.filter((s) => s.status === 'done');
   const [addOpen, setAddOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
   const [code, setCode] = useState('');
   const [peek, setPeek] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -89,7 +110,7 @@ export function SessionsScreen({ ctx }) {
     if (!code.trim()) return;
     setBusy(true); setErr('');
     peekSession(code.trim())
-      .then((p) => { setPeek(p); setBusy(false); })
+      .then((p) => { setPeek(p); setBusy(false); setJoinOpen(false); })
       .catch((e) => { setErr(e.message === 'INVALID_CODE' ? 'No session found for that code.' : (e.message || 'Could not look up code.')); setBusy(false); });
   };
   const doJoin = () => {
@@ -101,25 +122,23 @@ export function SessionsScreen({ ctx }) {
 
   return (
     <div className="page">
-      <div className="row between wrap" style={{ marginBottom: 18, gap: 12 }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 30, margin: 0, letterSpacing: '.01em' }}>My Sessions</h1>
-          <p className="muted" style={{ margin: '3px 0 0', fontSize: 14 }}>Matchdays you've created or joined.</p>
-        </div>
-        <button className="btn btn--accent" disabled={!live} onClick={() => setAddOpen(true)}><Icon name="plus" className="ico" /> New session</button>
-      </div>
+      <p className="muted" style={{ margin: '0 0 18px', fontSize: 14 }}>Matchdays you've created or joined.</p>
 
-      {/* Join by code */}
-      <div className="card card--pad" style={{ marginBottom: 22 }}>
-        <div className="section-title">Join a session</div>
-        <div className="row wrap" style={{ gap: 8 }}>
-          <input className="input grow" placeholder="Enter share code, e.g. TURF-9F4KQ" value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === 'Enter' && doPeek()} style={{ minWidth: 180 }} />
-          <button className="btn" disabled={!live || busy || !code.trim()} onClick={doPeek}><Icon name="arrowR" className="ico" /> Look up</button>
+      {/* Two distinct, unmistakable entry points — never blend create and join into one box. */}
+      <div className="entry-grid" style={{ marginBottom: live ? 22 : 8 }}>
+        <div className="card card--pad entry-card">
+          <div className="icon-badge entry-card__badge"><Icon name="plus" className="ico" /></div>
+          <div className="entry-card__title">Create a session</div>
+          <button className="btn btn--accent btn--block" disabled={!live} onClick={() => setAddOpen(true)}><Icon name="plus" className="ico" /> New session</button>
         </div>
-        {err && <p className="muted" style={{ color: 'var(--amber)', fontSize: 12.5, margin: '10px 0 0' }}>{err}</p>}
-        {!live && <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>Sign in (Supabase mode) to join or create sessions.</p>}
+
+        <div className="card card--pad entry-card entry-card--join">
+          <div className="icon-badge icon-badge--sky entry-card__badge"><Icon name="arrowR" className="ico" /></div>
+          <div className="entry-card__title">Join a session</div>
+          <button className="btn btn--accent btn--block" disabled={!live} onClick={() => { setErr(''); setJoinOpen(true); }}><Icon name="arrowR" className="ico" /> Join session</button>
+        </div>
       </div>
+      {!live && <p className="muted" style={{ fontSize: 12, margin: '0 0 22px' }}>Sign in (Supabase mode) to join or create sessions.</p>}
 
       <div className="section-title">Upcoming &amp; live</div>
       <div className="grid-auto" style={{ marginBottom: 28 }}>
@@ -134,6 +153,7 @@ export function SessionsScreen({ ctx }) {
       </div>
 
       {addOpen && <AddSessionModal ctx={ctx} onClose={() => setAddOpen(false)} />}
+      {joinOpen && <JoinByCodeModal code={code} setCode={setCode} busy={busy} err={err} onClose={() => setJoinOpen(false)} onLookup={doPeek} />}
       {peek && <JoinConfirmModal peek={peek} busy={busy} onCancel={() => setPeek(null)} onConfirm={doJoin} />}
     </div>
   );

@@ -8,11 +8,11 @@ import {
   loadDashboardStats,
   onAuthChange,
   saveAvailabilityRow,
-  saveExpenses,
+  saveExpenseRow,
   saveFormation,
   saveGoals,
   saveMatches,
-  savePayments,
+  savePaymentRow,
   saveProfile,
   saveSessionMembers,
   saveTeamPlayers,
@@ -22,8 +22,10 @@ import {
   updateMatch,
 } from './lib/liveDb.js';
 import { DATA, setActiveDb } from './lib/dataView.js';
+import { dateLabel, timeOfDay } from './lib/format.js';
 import { Icon } from './components/Icon.jsx';
-import { StatusPill } from './components/core.jsx';
+import { StatusPill, AccountActions, AppSkeleton } from './components/core.jsx';
+import { DialogProvider, useDialog } from './components/dialog.jsx';
 import { Sidebar, BottomTabBar, MoreScreen, NAV_SESSION } from './components/nav.jsx';
 import { AuthScreen } from './screens/AuthScreen.jsx';
 import { DashboardScreen } from './screens/DashboardScreen.jsx';
@@ -34,7 +36,6 @@ import { TeamsScreen } from './screens/TeamsScreen.jsx';
 import { FormationScreen } from './screens/FormationScreen.jsx';
 import { ScheduleScreen } from './screens/ScheduleScreen.jsx';
 import { LiveScreen } from './screens/LiveScreen.jsx';
-import { StandingsScreen } from './screens/StandingsScreen.jsx';
 import { HistoryScreen } from './screens/HistoryScreen.jsx';
 import { ExpensesScreen } from './screens/ExpensesScreen.jsx';
 import { ProfileScreen } from './screens/ProfileScreen.jsx';
@@ -51,16 +52,38 @@ function buildAssign(db, keepMockPool = false) {
 }
 
 function App() {
+  return (
+    <DialogProvider>
+      <AppShell />
+    </DialogProvider>
+  );
+}
+
+// Restores the screen/session a user was on across a hard refresh. sessionStorage (not
+// localStorage) so this clears with the tab/browser session, never sticks around stale.
+const NAV_STATE_KEY = 'turf_nav_state';
+function readNavState() {
+  try { return JSON.parse(sessionStorage.getItem(NAV_STATE_KEY) || 'null'); } catch (e) { return null; }
+}
+function writeNavState(screen, activeId) {
+  try { sessionStorage.setItem(NAV_STATE_KEY, JSON.stringify({ screen, activeId })); } catch (e) {}
+}
+
+function AppShell() {
+  const { confirm, alert } = useDialog();
   const [entered, setEntered] = useState(!USE_SUPABASE);
   const [authSession, setAuthSession] = useState(null);
   const [liveData, setLiveData] = useState(null);
   const [liveLoading, setLiveLoading] = useState(USE_SUPABASE);
   const [liveError, setLiveError] = useState('');
-  const [screen, setScreen] = useState('dashboard');
-  const [activeId, setActiveId] = useState('s1');
+  const restoredNav = useRef(readNavState());
+  const [screen, setScreen] = useState(restoredNav.current?.screen || 'dashboard');
+  const [activeId, setActiveId] = useState(restoredNav.current?.activeId || 's1');
   const [side, setSide] = useState(5);
   const activeIdRef = useRef(activeId);
   activeIdRef.current = activeId;
+  const screenRef = useRef(screen);
+  screenRef.current = screen;
 
   const dbView = USE_SUPABASE && liveData && authSession ? createDbView(liveData, authSession.user.id) : DB;
   setActiveDb(dbView);
@@ -99,6 +122,7 @@ function App() {
     // and overwrite a player's just-made, not-yet-committed availability mark).
     if (id === activeIdRef.current) return;
     setActiveId(id);
+    writeNavState(screenRef.current, id);
     if (USE_SUPABASE && authSession) refreshLiveData(authSession.user.id, { silent: true, target: id });
   };
 
@@ -130,19 +154,29 @@ function App() {
 
   // Get started (first time) / Welcome back (returning) modal over a blurred dashboard.
   const [welcome, setWelcome] = useState(null); // null | 'started' | 'back'
+  const [welcomeClosing, setWelcomeClosing] = useState(false);
   const welcomeInit = useRef(false);
   const dismissWelcome = () => {
     if (authSession) { try { localStorage.setItem('turf_welcomed_' + authSession.user.id, '1'); } catch (e) {} }
-    setWelcome(null);
+    setWelcomeClosing(true);
+    setTimeout(() => { setWelcome(null); setWelcomeClosing(false); }, 180);
   };
   useEffect(() => {
     if (!USE_SUPABASE || !authSession || welcomeInit.current) return;
+    // Session-scoped (not the permanent turf_welcomed_<uid> flag below): a hard refresh
+    // mid-session must not re-show this modal for a user who already dismissed it a moment
+    // ago. sessionStorage clears with the tab, so a genuinely new session still sees it once.
+    const sessionKey = 'turf_welcome_session_' + authSession.user.id;
+    let shownThisSession = false;
+    try { shownThisSession = !!sessionStorage.getItem(sessionKey); } catch (e) {}
+    if (shownThisSession) { welcomeInit.current = true; return; }
     const p = DATA.profile(authSession.user.id);
     const onboarded = p && p.firstName && p.contact && p.prefPos1 && p.prefPos2;
     if (!onboarded) return; // wait until the profile is complete + loaded
     welcomeInit.current = true;
     let seen = false;
     try { seen = !!localStorage.getItem('turf_welcomed_' + authSession.user.id); } catch (e) {}
+    try { sessionStorage.setItem(sessionKey, '1'); } catch (e) {}
     setWelcome(seen ? 'back' : 'started');
   }, [authSession, liveData]);
 
@@ -153,8 +187,10 @@ function App() {
       if (st && st.turf) {
         if (st.activeId) setActiveId(st.activeId);
         setScreen(st.screen || 'dashboard');
+        writeNavState(st.screen || 'dashboard', st.activeId || activeIdRef.current);
       } else {
         setScreen('dashboard');
+        writeNavState('dashboard', activeIdRef.current);
       }
     };
     window.addEventListener('popstate', onPop);
@@ -290,16 +326,12 @@ function App() {
   const saveAvailRow = (row) => {
     if (persist && session?.id) saveAvailabilityRow(session.id, row).catch(persistError);
   };
-  const setPayments = (next) => setPaymentsState((prev) => {
-    const value = typeof next === 'function' ? next(prev) : next;
-    if (persist) savePayments(value).catch(persistError);
-    return value;
-  });
-  const setExpenses = (next) => setExpensesState((prev) => {
-    const value = typeof next === 'function' ? next(prev) : next;
-    if (persist) saveExpenses(value).catch(persistError);
-    return value;
-  });
+  // Local-only; persistence is SURGICAL (one row) via savePaymentRow/saveExpenseRow below, so one
+  // client's stale snapshot never overwrites another client's concurrent edit on refresh/reload.
+  const setPayments = (next) => setPaymentsState((prev) => (typeof next === 'function' ? next(prev) : next));
+  const setExpenses = (next) => setExpensesState((prev) => (typeof next === 'function' ? next(prev) : next));
+  const savePaymentRowCtx = (row) => { if (persist) savePaymentRow(row).catch(persistError); };
+  const saveExpenseRowCtx = (row) => { if (persist) saveExpenseRow(row).catch(persistError); };
   const setMembers = (next) => setMembersState((prev) => {
     const value = typeof next === 'function' ? next(prev) : next;
     if (persist && session?.id) saveSessionMembers(session.id, value).catch(persistError);
@@ -311,6 +343,7 @@ function App() {
     // push an in-app history entry so the browser Back button navigates screens
     // (instead of jumping out to the Google auth page).
     try { window.history.pushState({ turf: true, screen: s, activeId: activeIdRef.current }, ''); } catch (e) {}
+    writeNavState(s, activeIdRef.current);
     const sc = document.querySelector('.app__scroll'); if (sc) sc.scrollTop = 0;
   };
   const sessionMatches = session ? matches.filter((m) => m.sessionId === session.id) : [];
@@ -332,13 +365,16 @@ function App() {
     saveAvailRow,
     payments: [paymentsValue, setPayments],
     expenses: [expensesValue, setExpenses],
+    savePaymentRow: savePaymentRowCtx,
+    saveExpenseRow: saveExpenseRowCtx,
     saveGoals: (goals) => persist && saveGoals(goals).catch(persistError),
     saveFormation: (teamId, formation) => persist && saveFormation(teamId, formation).catch(persistError),
     logout, reload, dashStats, me,
+    confirm, alert,
   };
 
   if (USE_SUPABASE && liveLoading) {
-    return <div className="hero-auth pitch-bg"><div className="auth-card"><div className="card card--pad">Loading TURF...</div></div></div>;
+    return <AppSkeleton />;
   }
 
   if (USE_SUPABASE && !authSession) {
@@ -368,20 +404,23 @@ function App() {
   // NOTE: no more forced "create first session" page. A user with zero sessions lands on the
   // Dashboard (which has its own empty state) + the Get-started modal. Creating/joining lives
   // on My Sessions (Steps 7-8).
+  // Session-scoped pages show the actual matchday (name + kickoff) as the subtitle instead of a
+  // generic tagline that just repeated what the screen's own heading already said.
+  const sessCtx = session ? `${session.turfName} · ${dateLabel(session.slotStart)} · ${timeOfDay(session.slotStart)}` : '';
   const titles = {
     dashboard: ['Dashboard', 'Your activity'],
     sessions: ['My Sessions', 'Join or create a matchday'],
-    detail: [session?.turfName || 'Session', 'Session overview'],
-    availability: ['Availability', 'Who’s in for the next game'],
-    teams: ['Team Builder', 'Split the squad'],
-    formation: ['Formation', 'Tactical board'],
-    schedule: ['Schedule', 'Fixture list'],
-    live: ['Live Match', 'Matchday control'],
-    standings: ['Standings', 'League table'],
-    history: ['History', 'Past results'],
-    expenses: ['Expenses', 'Turf bill & payments'],
+    detail: [session?.turfName || 'Session', session ? `${dateLabel(session.slotStart)} · ${timeOfDay(session.slotStart)}` : ''],
+    availability: ['IN/OUT', sessCtx],
+    teams: ['Team Builder', sessCtx],
+    formation: ['Formation', sessCtx],
+    schedule: ['Schedule', sessCtx],
+    live: ['Live Match', sessCtx],
+    standings: ['Standings', sessCtx],
+    history: ['History', sessCtx],
+    expenses: ['Expenses', sessCtx],
     profile: ['Profile', 'You'],
-    more: ['More', ''],
+    more: ['More', session?.turfName || ''],
   };
   const [tt, ts] = titles[screen] || ['TURF', ''];
 
@@ -392,18 +431,18 @@ function App() {
     availability: <AvailabilityScreen ctx={ctx} />,
     teams: <TeamsScreen ctx={ctx} />,
     formation: <FormationScreen ctx={ctx} />,
-    schedule: <ScheduleScreen ctx={ctx} />,
+    schedule: <ScheduleScreen ctx={ctx} defaultTab="fixtures" />,
     live: <LiveScreen ctx={ctx} />,
-    standings: <StandingsScreen ctx={ctx} />,
+    standings: <ScheduleScreen ctx={ctx} defaultTab="table" />,
     history: <HistoryScreen ctx={ctx} />,
     expenses: <ExpensesScreen ctx={ctx} />,
     profile: <ProfileScreen ctx={ctx} />,
-    more: <MoreScreen go={go} sessionName={session?.turfName} />,
+    more: <MoreScreen go={go} />,
   };
 
   return (
     <div className="app pitch-bg">
-      <Sidebar screen={screen} go={go} sessions={DATA.sessions} activeId={activeId} openSession={openSession} />
+      <Sidebar screen={screen} go={go} sessions={DATA.sessions} activeId={activeId} openSession={openSession} onLogout={logout} />
       <div className="app__main">
         <header className="topbar">
           <div>
@@ -411,20 +450,10 @@ function App() {
             {ts && <div className="topbar__sub">{ts}</div>}
           </div>
           <div className="topbar__spacer" />
-          {/* Role badges reflect the signed-in user's real permissions for this session. */}
-          <div className="row" style={{ gap: 6 }}>
-            {role === 'admin' && <span className="pill" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>Creator</span>}
-            {role === 'organizer' && <span className="pill" style={{ color: 'var(--sky)', borderColor: 'var(--sky)' }}>Organizer</span>}
-            {isCaptain && <span className="pill" style={{ color: 'var(--amber)', borderColor: 'var(--amber)' }}>Captain</span>}
+          <div className="row" style={{ gap: 8 }}>
             {locked && <StatusPill status="locked" />}
             {USE_SUPABASE && authSession && (
-              <button className="btn btn--ghost btn--sm" onClick={doRefresh} disabled={refreshing} title="Refresh data from server">
-                <span className={refreshing ? 'spin' : ''} style={{ display: 'inline-flex' }}><Icon name="refresh" size={14} /></span>
-                {refreshing ? ' Refreshing…' : ' Refresh'}
-              </button>
-            )}
-            {USE_SUPABASE && authSession && (
-              <button className="btn btn--ghost btn--sm" onClick={logout} title="Log out">Log out</button>
+              <AccountActions refreshing={refreshing} onRefresh={doRefresh} onProfile={() => go('profile')} onLogout={logout} />
             )}
           </div>
         </header>
@@ -443,8 +472,8 @@ function App() {
       </div>
 
       {welcome && (
-        <div className="modal-backdrop" onClick={dismissWelcome}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className={'modal-backdrop' + (welcomeClosing ? ' is-closing' : '')} onClick={dismissWelcome}>
+          <div className={'modal-card' + (welcomeClosing ? ' is-closing' : '')} onClick={(e) => e.stopPropagation()}>
             <div className="brand__mark" style={{ width: 46, height: 46, fontSize: 26, margin: '0 auto 12px' }}>T</div>
             <h2 style={{ fontFamily: 'var(--f-display)', fontSize: 24, margin: '0 0 6px' }}>
               {welcome === 'started' ? 'Get started' : 'Welcome back'}

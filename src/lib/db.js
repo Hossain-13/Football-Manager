@@ -3,6 +3,8 @@
    All records conform to the types in types.ts. Names are the real crew
    from the organizer's manual spreadsheet.
    ===================================================================== */
+import { firstLetter } from './format.js';
+
 export const DB = (function () {
   const now = Date.now();
   const MIN = 60 * 1000;
@@ -138,7 +140,7 @@ export const DB = (function () {
     initials: (id) => {
       const p = profiles.find((x) => x.id === id);
       if (!p) return '?';
-      return (p.firstName[0] + (p.lastName ? p.lastName[0] : (p.firstName[1] || ''))).toUpperCase();
+      return (firstLetter(p.firstName) + (p.lastName ? firstLetter(p.lastName) : firstLetter(p.firstName.slice(1)))).toUpperCase();
     },
     name: (id) => { const p = profiles.find((x) => x.id === id); return p ? (p.firstName + (p.lastName ? ' ' + p.lastName : '')) : '—'; },
     first: (id) => { const p = profiles.find((x) => x.id === id); return p ? p.firstName : '—'; },

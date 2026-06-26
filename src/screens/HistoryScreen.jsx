@@ -1,16 +1,12 @@
 import React from 'react';
 import { StatusPill, TeamDot } from '../components/core.jsx';
 import { DATA, keyFirst } from '../lib/dataView.js';
-import { dateLabel } from '../lib/format.js';
 
 export function HistoryScreen({ ctx }) {
   const done = ctx.matches.filter((m) => m.status === 'done');
   return (
     <div className="page page--narrow">
-      <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 30, margin: '0 0 4px' }}>Match History</h1>
-      <p className="muted" style={{ margin: '0 0 18px', fontSize: 14 }}>{ctx.session.turfName} · {dateLabel(ctx.session.slotStart)}</p>
-
-      <div className="card">
+      <div className="card" style={{ marginTop: 4 }}>
         {done.length === 0 && <div className="card--pad muted" style={{ padding: 18 }}>No completed matches yet.</div>}
         {done.map((m) => {
           const A = DATA.team(m.teamA), B = DATA.team(m.teamB);

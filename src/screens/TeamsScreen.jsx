@@ -49,7 +49,7 @@ export function TeamsScreen({ ctx }) {
   const randomise = async () => {
     if (!editable || busy) return;
     const all = inIds.slice();
-    if (all.length < 2) { window.alert('Mark at least 2 players IN on the Availability page first.'); return; }
+    if (all.length < 2) { ctx.alert('Mark at least 2 players IN on the IN/OUT page first.'); return; }
     const perSide = s.playersPerSide || 5;
     const N = Math.max(2, Math.min(10, Math.round(all.length / perSide) || 2));
     setBusy(true);
@@ -65,7 +65,7 @@ export function TeamsScreen({ ctx }) {
       await saveTeamPlayers(buckets);
       await saveTeams(list, {}); // reset captains; managers re-pick
       ctx.reload();
-    } catch (e) { window.alert(e.message || 'Randomise failed'); }
+    } catch (e) { ctx.alert(e.message || 'Randomise failed'); }
     setBusy(false);
   };
 
@@ -73,14 +73,16 @@ export function TeamsScreen({ ctx }) {
     if (!teamName.trim() || busy) return;
     setBusy(true);
     try { await createTeam(s.id, teamName.trim(), TEAM_PALETTE[teams.length % TEAM_PALETTE.length]); ctx.reload(); setTeamName(''); setAddOpen(false); }
-    catch (e) { window.alert(e.message || 'Could not add team'); }
+    catch (e) { ctx.alert(e.message || 'Could not add team'); }
     setBusy(false);
   };
   const removeTeam = async (teamId, name) => {
-    if (busy || !window.confirm(`Remove ${name}? Its players return to the pool.`)) return;
+    if (busy) return;
+    const ok = await ctx.confirm({ title: 'Remove team?', message: `${name} will be removed and its players return to the pool.`, confirmLabel: 'Remove', danger: true });
+    if (!ok) return;
     setBusy(true);
     try { await deleteTeam(teamId); ctx.reload(); }
-    catch (e) { window.alert(e.message || 'Could not remove team'); }
+    catch (e) { ctx.alert(e.message || 'Could not remove team'); }
     setBusy(false);
   };
 
@@ -133,10 +135,7 @@ export function TeamsScreen({ ctx }) {
   return (
     <div className="page">
       <div className="row between wrap" style={{ marginBottom: 16, gap: 12 }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 30, margin: 0 }}>Team Builder</h1>
-          <p className="muted" style={{ margin: '3px 0 0', fontSize: 14 }}>Pool = players marked IN. Drag into teams · tap the flag to set a captain (C).</p>
-        </div>
+        <p className="muted" style={{ margin: 0, fontSize: 14 }}>Pool = players marked IN. Drag into teams · tap the flag to set a captain (C).</p>
         <div className="row" style={{ gap: 8 }}>
           {!ctx.canManage ? <span className="pill"><Icon name="lock" className="ico" style={{ width: 13, height: 13 }} /> VIEW ONLY</span> :
             locked ? <StatusPill status="locked" /> :

@@ -66,7 +66,7 @@ export function StandingsTable({ matches, teams, scoring, qualifiers = 2 }) {
   );
 }
 
-/* ---------- TIMER ---------- */
+/* ---------- TIMER (linear digits + bar, Start/Reset side by side) ---------- */
 export function TimerDisplay({ match, can, reason, onTimerChange }) {
   // The clock is DERIVED from the match row so every viewer sees the same time, live-synced:
   //   elapsed = paused_accum_seconds + (started_at ? now - started_at : 0)
@@ -78,28 +78,32 @@ export function TimerDisplay({ match, can, reason, onTimerChange }) {
   let elapsed = startedMs ? banked + (Date.now() - startedMs) / 1000 : banked;
   if (elapsed > dur) elapsed = dur;
   const running = !!startedMs && elapsed < dur;
+  const done = elapsed >= dur;
   const remaining = dur - elapsed;
   const pct = Math.min(100, (elapsed / dur) * 100);
+  // Same calm -> amber -> red color language as the Availability lock ring: the closer to full
+  // time, the more urgency the bar fill carries.
+  const fillColor = done ? 'var(--coral)' : pct >= 85 ? 'var(--coral)' : pct >= 60 ? 'var(--amber)' : 'var(--accent)';
 
   const start = () => { if (can) onTimerChange?.({ startedAt: new Date().toISOString(), pausedAccumSeconds: Math.floor(elapsed), status: 'live' }); };
   const pause = () => { if (can) onTimerChange?.({ startedAt: null, pausedAccumSeconds: Math.floor(elapsed), status: 'live' }); };
   const reset = () => { if (can) onTimerChange?.({ startedAt: null, pausedAccumSeconds: 0, status: 'live' }); };
 
   return (
-    <div className={'timer' + (running ? ' is-live' : '')}>
-      <div className="row" style={{ justifyContent: 'center', gap: 10, marginBottom: 6 }}>
-        {running ? <StatusPill status="live" /> : elapsed >= dur ? <StatusPill status="done" /> : <span className="pill">Paused</span>}
+    <div className="timer-lin">
+      <div className="timer-lin__meta">
+        {running ? <StatusPill status="live" /> : done ? <StatusPill status="done" /> : <span className="pill">Paused</span>}
         <span className="mono muted" style={{ fontSize: 11 }}>MATCH {match.matchNo} · {Math.round(dur / 60)} MIN</span>
       </div>
-      <div className="timer__digits">{mmss(remaining)}</div>
-      <div className="timer__bar"><span style={{ width: pct + '%' }} /></div>
-      <div className="timer__ctl">
-        {!running
-          ? <button className="btn btn--accent btn--lg" disabled={!can || elapsed >= dur} onClick={start}><Icon name="play" className="ico" /> {elapsed > 0 ? 'Resume' : 'Start'}</button>
-          : <button className="btn btn--lg" disabled={!can} onClick={pause}><Icon name="pause" className="ico" /> Pause</button>}
-        <button className="btn btn--ghost btn--lg" disabled={!can} onClick={reset}><Icon name="reset" className="ico" /> Reset</button>
+      <div className="timer-lin__digits">{mmss(remaining)}</div>
+      <div className="timer-lin__bar"><span style={{ width: pct + '%', background: fillColor }} /></div>
+      <div className="timer-lin__ctl">
+        <button className="btn btn--accent" disabled={!can || done} onClick={running ? pause : start}>
+          <Icon name={running ? 'pause' : 'play'} className="ico" /> {running ? 'Pause' : elapsed > 0 ? 'Resume' : 'Start'}
+        </button>
+        <button className="btn btn--ghost" disabled={!can} onClick={reset}><Icon name="reset" className="ico" /> Reset</button>
       </div>
-      {!can && <div className="row" style={{ justifyContent: 'center', gap: 6, marginTop: 12, color: 'var(--amber)', fontSize: 12.5 }}>
+      {!can && <div className="row" style={{ justifyContent: 'center', gap: 6, marginTop: 10, color: 'var(--amber)', fontSize: 12.5 }}>
         <Icon name="lock" className="ico" /> {reason || 'Only captains can control the clock'}
       </div>}
     </div>
@@ -107,10 +111,16 @@ export function TimerDisplay({ match, can, reason, onTimerChange }) {
 }
 
 /* ---------- SCORE STEPPER ---------- */
-export function ScoreStepper({ team, score, onChange, can, align }) {
+/* tagSlot/chipsSlot are optional - LiveScreen flanks the score digit with a "+ Tag" button on
+   one side and the scored players' chips on the other, on the same row as the number. */
+export function ScoreStepper({ team, score, onChange, can, tagSlot, chipsSlot }) {
   return (
     <div className="scorebox">
-      <div className="scorebox__num" style={{ color: team.color }}>{score}</div>
+      <div className="scorebox__row">
+        <div className="scorebox__tag">{tagSlot}</div>
+        <div className="scorebox__num" style={{ color: team.color }}>{score}</div>
+        <div className="scorebox__chips">{chipsSlot}</div>
+      </div>
       <div className="scorebox__team" style={{ justifyContent: 'center' }}>
         <TeamDot color={team.color} /> {team.name}
       </div>

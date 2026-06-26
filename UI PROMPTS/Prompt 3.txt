@@ -1,0 +1,71 @@
+/impeccable craft RoleGate UX, Expenses page, Availability rename, pitch background refinement
+
+CONTEXT (this maps to BUILD_LOG.md pending item 9 "Role-gated UX across screens", the Expenses
+round, and the background-refinement caveat already on file):
+Read DESIGN.md, PRODUCT.md, BUILD_LOG.md from disk first, including this exact noted caveat from
+BUILD_LOG.md: "the turf/pitch BACKGROUND was liked — it must be REFINED into a beautiful,
+aesthetic backdrop (subtle mowing stripes, depth/vignette, low opacity)" — that's one of the four
+things in this prompt, treat it precisely as written, don't redesign the background concept.
+
+This prompt covers four named surfaces. If your first plan ends up touching all four in one large
+diff, stop and propose splitting it into two smaller `craft` passes in this same chat instead —
+smaller diffs are cheaper for me to verify.
+
+SCOPE & GOALS:
+
+1. RoleGate component (src/components/core.jsx) — used across Formation, Live, Availability,
+   Expenses, Schedule wherever a control is view-only for the current user.
+   GOAL: right now a locked control is grayscale + 45% opacity + a small lock-icon caption below
+   it. Users should be able to tell a button/control isn't theirs to use BEFORE reading the
+   caption text — make the "not interactive" state more immediately legible at a glance (e.g.
+   distinct cursor, no hover-affordance at all, a visual treatment that doesn't read as "a normal
+   button that happens to be dim"). Apply consistently everywhere RoleGate is used; don't write
+   one-off styles per screen.
+
+2. ExpensesScreen.jsx — open https://dribbble.com/shots/27361519-Personal-Budget-Management-Smart-Spending-Expense-Tracking
+   yourself and study its layout for owed/paid states and per-row money input. Apply that
+   layout/spacing taste to ExpensesScreen, with these specific changes:
+   - Remove the bkash/cash method toggle (the `seg seg--ghost` with ['bkash','cash']) from the
+     visual layout entirely. This is a UI removal only — do NOT remove the `method` field from
+     updatePayment, the payments data shape, liveDb.js, or schema.sql. The field stays in the
+     data; it just no longer has a visible control in this screen.
+   - Keep the Due→Paid toggle behavior exactly as-is (same pill, same togglePaid logic) — just
+     restyle/reposition it as part of the new layout.
+   - Rework the inline "enter exact amount paid" input (the editKey/editVal/openEdit/saveEdit
+     flow) so it stays wrapped cleanly within its row at all widths instead of breaking layout —
+     same input/save/cancel behavior, new presentation.
+   - Apply this same visual language to both the organizer-view and read-only player-view states.
+
+3. Rename "Availability" to "IN/OUT" — title/nav/label text ONLY:
+   - In nav.jsx (NAV_SESSION, TABS, MORE_GROUPS) and App.jsx's `titles` map, change the
+     user-facing label "Availability" to "IN/OUT".
+   - Do NOT rename the `status: 'available'`/`'out'` data values anywhere (AvailabilityScreen.jsx
+     filters, liveDb.js mappers, schema/RLS) — those stay exactly as they are. This is a display
+     label change only, the underlying enum strings are untouched.
+   - The "TEAMS LOCK IN" countdown card at the top of AvailabilityScreen.jsx: make it more
+     interactive/visual than plain mm:ss digits — e.g. a circular progress ring or similar visual
+     fill that depletes toward zero, with color shifting (e.g. calm → amber → red) as time runs
+     out. Reposition it if needed for better page balance, on both mobile and desktop. Keep it
+     driven by the same lockAt/Countdown timing logic already there — presentation change only.
+
+4. Pitch/turf background refinement (the .pitch-bg class and any related gradients in
+   styles.css): per the BUILD_LOG.md caveat quoted above — add subtle mowing-stripe texture,
+   depth/vignette, kept at low opacity so it reads as a refined backdrop, not the loud green
+   panels the original anti-reference called out. This is a backdrop-only change behind existing
+   content; don't change foreground card/text contrast in the process (AA must still hold).
+
+CONSTRAINTS:
+- No functionality / data-flow changes anywhere except the explicitly-named UI-only removal of
+  the method toggle CONTROL (data field stays) and the label-only rename described above.
+- Stay inside the existing token system (styles.css) — extend, don't replace.
+- Must build clean (`npm run build`) before you call it done.
+- Mobile-first; verify at existing breakpoints.
+- WCAG AA contrast must hold on every text/control touched, including the refined background.
+- Respect prefers-reduced-motion on the new countdown ring/fill animation.
+
+OUT OF SCOPE:
+- Dashboard, Sessions, Profile, Sidebar, AccountActions — already done in Prompts 1-2.
+- Live/Standings/Schedule/Formation page layouts — that's Prompt 4.
+- Any change to the payments data model, schema.sql, or liveDb.js.
+
+Before you write any code — split this into two passes in this same chat. Pass 3a: RoleGate (item 1) + Expenses (item 2) only. Pass 3b: the Availability rename + lock-timer ring (item 3) + pitch background refinement (item 4) only. Show me 3a's plan first; don't start 3b until I've reviewed and built 3a.

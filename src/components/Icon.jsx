@@ -1,7 +1,11 @@
 import React from 'react';
 
-export const Icon = ({ name, className = 'ico', size }) => {
-  const s = size ? { width: size, height: size } : undefined;
+export const Icon = ({ name, className = 'ico', size, style }) => {
+  // `style` (explicit width/height overrides at call sites) was previously dropped on the floor -
+  // every <Icon style={{width,height}}/> silently fell back to the .ico class's 18px default.
+  // Inside small circular icon buttons that's enough to make a diagonal glyph (the X) poke past
+  // the circle's inscribed-square boundary. size/style both merge into the same inline style now.
+  const s = size ? { width: size, height: size, ...style } : style;
   const P = {
     sessions: <><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></>,
     squad: <><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 8.5a3 3 0 0 1 0 5M17 19a5 5 0 0 0-2.5-4.3"/></>,
@@ -28,6 +32,8 @@ export const Icon = ({ name, className = 'ico', size }) => {
     play: <><path d="M7 4l13 8-13 8z"/></>,
     reset: <><path d="M4 4v6h6"/><path d="M4 10a8 8 0 1 1-1 6"/></>,
     refresh: <><path d="M20 11a8 8 0 1 0-.7 4"/><path d="M20 5v6h-6"/></>,
+    logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></>,
+    moreGrid: <><circle cx="6" cy="6" r="1.6"/><circle cx="12" cy="6" r="1.6"/><circle cx="18" cy="6" r="1.6"/><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/><circle cx="6" cy="18" r="1.6"/><circle cx="12" cy="18" r="1.6"/><circle cx="18" cy="18" r="1.6"/></>,
     edit: <><path d="M5 19h14M5 19l1-4 9-9 3 3-9 9z"/></>,
     pin: <><path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></>,
     clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,

@@ -6,20 +6,20 @@ import { dateLabel } from '../lib/format.js';
 
 export function ProfileScreen({ ctx }) {
   const id = DATA.currentUserId;
+  const me = (DATA.profiles || []).find((p) => p.id === id);
   const badges = [];
   if (ctx.role === 'admin') badges.push(['Admin', 'var(--accent)']);
   if (ctx.role === 'organizer') badges.push(['Organizer', 'var(--sky)']);
   if (ctx.isCaptain) badges.push(['Captain', 'var(--amber)']);
   badges.push(['Player', 'var(--accent)']);
+  const prefs = [me?.prefPos1, me?.prefPos2].filter(Boolean);
   const mySessions = DATA.sessions;
 
   return (
     <div className="page page--narrow">
-      <h1 style={{ fontFamily: 'var(--f-display)', fontSize: 30, margin: '0 0 18px' }}>Profile</h1>
-
-      <div className="card card--pad" style={{ marginBottom: 16 }}>
-        <div className="row" style={{ gap: 16 }}>
-          <Avatar id={id} size={68} />
+      <div className="card card--pad" style={{ marginBottom: 16, marginTop: 4 }}>
+        <div className="profile-head">
+          <Avatar id={id} size={72} />
           <div className="grow">
             <div style={{ fontFamily: 'var(--f-display)', fontSize: 26, fontWeight: 700 }}>{DATA.name(id)}</div>
             <div className="row wrap" style={{ gap: 7, marginTop: 8 }}>
@@ -27,16 +27,29 @@ export function ProfileScreen({ ctx }) {
                 <span key={b} className="pill" style={{ color: c, borderColor: c + '66', background: c + '18' }}>{b}</span>
               ))}
             </div>
+            {(prefs.length > 0 || me?.contact) && (
+              <div className="profile-head__prefs">
+                {prefs.map((p) => (
+                  <span key={p} className="profile-pref"><Icon name="formation" className="ico" style={{ width: 13, height: 13 }} /> {p}</span>
+                ))}
+                {me?.contact && <span className="profile-pref">{me.contact}</span>}
+              </div>
+            )}
           </div>
-          <button className="icobtn"><Icon name="settings" className="ico" /></button>
+          <button className="icobtn" title="Settings" aria-label="Settings"><Icon name="settings" className="ico" /></button>
         </div>
+
       </div>
 
-      <div className="grid-3" style={{ marginBottom: 16 }}>
-        {[['MATCHES', 41], ['GOALS', 17], ['SESSIONS', 12]].map(([k, v]) => (
-          <div key={k} className="surface" style={{ padding: '16px', textAlign: 'center' }}>
-            <div className="num" style={{ fontSize: 30 }}>{v}</div>
-            <div className="muted mono" style={{ fontSize: 10, letterSpacing: '.1em' }}>{k}</div>
+      <div className="section-title">Career stats</div>
+      <div className="grid-3" style={{ marginBottom: 22 }}>
+        {[['schedule', 'MATCHES', 41], ['trophy', 'GOALS', 17], ['sessions', 'SESSIONS', 12]].map(([icon, k, v]) => (
+          <div key={k} className="surface dash-stat dash-stat--tile">
+            <div className="icon-badge"><Icon name={icon} className="ico" /></div>
+            <div>
+              <div className="num" style={{ fontSize: 26 }}>{v}</div>
+              <div className="muted mono" style={{ fontSize: 10, letterSpacing: '.1em', marginTop: 2 }}>{k}</div>
+            </div>
           </div>
         ))}
       </div>
@@ -45,9 +58,15 @@ export function ProfileScreen({ ctx }) {
         <div className="section-title">My sessions</div>
         <div className="stack" style={{ gap: 0 }}>
           {mySessions.map((s) => (
-            <div key={s.id} className="kv" style={{ cursor: 'pointer' }} onClick={() => { ctx.openSession(s.id); ctx.go('detail'); }}>
-              <span className="row" style={{ gap: 10 }}><StatusPill status={s.status} /><span className="kv__k" style={{ color: 'var(--chalk)' }}>{s.turfName}</span></span>
-              <span className="muted" style={{ fontSize: 12.5 }}>{dateLabel(s.slotStart)}</span>
+            <div key={s.id} className="profile-list-row" onClick={() => { ctx.openSession(s.id); ctx.go('detail'); }}>
+              <span className="row" style={{ gap: 10, minWidth: 0 }}>
+                <StatusPill status={s.status} />
+                <span style={{ color: 'var(--chalk)', fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.turfName}</span>
+              </span>
+              <span className="row" style={{ gap: 8, flex: 'none' }}>
+                <span className="muted" style={{ fontSize: 12.5 }}>{dateLabel(s.slotStart)}</span>
+                <Icon name="arrowR" className="ico" style={{ width: 15, height: 15 }} />
+              </span>
             </div>
           ))}
         </div>
