@@ -110,8 +110,15 @@ function AppShell() {
       const target = options.target ?? activeIdRef.current;
       const data = await loadAppData(userId, target);
       setLiveData(data);
+      return true;
     } catch (error) {
       setLiveError(error.message || 'Could not load Supabase data.');
+      // A "silent" refresh (manual Refresh button, session switch) skips the full-page loading
+      // skeleton on purpose, but a failure must still surface SOMETHING - previously it just
+      // vanished, so a real error (network drop, RLS reject) looked identical to "nothing
+      // happened" / the button doing nothing at all.
+      if (options.silent) alert({ title: 'Refresh failed', message: error.message || 'Could not load the latest data. Check your connection and try again.', danger: true });
+      return false;
     } finally {
       if (!options.silent) setLiveLoading(false);
     }
