@@ -39,7 +39,6 @@ export function ProfileScreen({ ctx }) {
               </div>
             )}
           </div>
-          <button className="icobtn" title="Settings" aria-label="Settings"><Icon name="settings" className="ico" /></button>
         </div>
 
       </div>
