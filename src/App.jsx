@@ -146,11 +146,17 @@ function AppShell() {
   const logout = () => { signOut().catch(() => {}); };
   const reload = () => { if (USE_SUPABASE && authSession) refreshLiveData(authSession.user.id, { silent: true }); };
   const [refreshing, setRefreshing] = useState(false);
+  // setRefreshing(true) fires unconditionally first - the button must always visibly respond to
+  // a click. The USE_SUPABASE/authSession check moves inside the try, so an unexpected falsy
+  // value there can no longer make the click look like it did nothing.
   const doRefresh = async () => {
-    if (!USE_SUPABASE || !authSession || refreshing) return;
+    if (refreshing) return;
     setRefreshing(true);
-    try { await refreshLiveData(authSession.user.id, { silent: true }); }
-    finally { setTimeout(() => setRefreshing(false), 450); } // keep the spinner visible briefly
+    try {
+      if (USE_SUPABASE && authSession) await refreshLiveData(authSession.user.id, { silent: true });
+    } finally {
+      setTimeout(() => setRefreshing(false), 600); // keep the spinner visible briefly
+    }
   };
 
   // Cross-session aggregates for the Dashboard (loaded when the dashboard is shown).
